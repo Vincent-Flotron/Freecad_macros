@@ -1,6 +1,7 @@
 # import FreeCAD as App
 import FreeCAD as App
 from fractions import Fraction
+from collections import deque
 
 def get_page_of_DrawProjGroupItem(selected_objects):
     """
@@ -22,6 +23,53 @@ def get_page_of_DrawProjGroupItem(selected_objects):
     else:
         print("Please select a valid object.")
 
+
+def get_Page_of_DrawProjGroupItem(selected_objects):
+    """
+    Parameter:
+        selected_objects = Gui.Selection.getSelection()
+    """
+    selected_obj = selected_objects[0] if selected_objects else None
+    parent_obj   = None
+
+    if selected_obj:
+        # Traverse up the hierarchy to find the parent Page
+        if len(selected_obj.InListRecursive) > 0:
+            parent_obj = selected_obj.InListRecursive[0]
+            
+        if parent_obj and parent_obj.TypeId == 'TechDraw::DrawPage':
+            return parent_obj
+        else:
+            print("Parent Page not found.")
+    else:
+        print("Please select a valid object.")
+
+
+def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
+    """
+    Parameter:
+        selected_objects = Gui.Selection.getSelection()
+    """
+    selected_obj = selected_objects[0] if selected_objects else None
+    parent_obj   = None
+
+    if selected_obj:
+        # Traverse up the hierarchy to find the parent DrawProjGroup
+        if len(selected_obj.InListRecursive) > 0:
+            parent_obj = selected_obj.InListRecursive[0]
+            
+        print(f"get_DrawProjGroup_of_DrawProjGroupItem : {selected_obj.InListRecursive}")
+        print(f"parent_obj.TypeId                      : {parent_obj.TypeId}")
+        if parent_obj and parent_obj.TypeId == 'TechDraw::DrawProjGroup':
+            return parent_obj
+        else:
+            print("Parent TechDraw::DrawProjGroup not found.")
+    else:
+        print("Please select a valid object.")
+
+def is_DrawProjGroup(selected_object):
+    return selected_object == 'TechDraw::DrawProjGroup'
+
 def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
     """
     Parameter:
@@ -42,7 +90,7 @@ def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
             # Check if editable_text_name exists in the editable fields
             if editable_text_name in editable_texts:
                 # Update the editable_text_name field value
-                editable_texts[editable_text_name] = value
+                editable_texts[editable_text_name] = str(value)
                 template.EditableTexts = editable_texts
                 
                 # Recompute the document to apply changes
@@ -112,6 +160,9 @@ def get_highest_page_number():
         if page_num > max_page_num:
             max_page_num = page_num
     return max_page_num
+
+class myQueue(deque):
+    pass
 
 if __name__ == "__main__":
     import FreeCADGui as Gui

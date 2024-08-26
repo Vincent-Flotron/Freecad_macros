@@ -33,13 +33,15 @@ new_page.Template = template
 # Recompute the document to apply changes
 doc.recompute()
 Gui.Selection.clearSelection()
-Gui.Selection.addSelection('Maison2',f'Page{page_nb}')
+Gui.Selection.addSelection(App.ActiveDocument.Label,f'Page{page_nb}')
 
 
 # Update all page numbers
-field_name       = 'FC-SH'
-last_page_number = new_page_num
-doc              = App.activeDocument()
+field_sheet_name     = 'FC-SH'
+last_page_number     = new_page_num
+field_drawing_numb   = "Drawing_number"
+initial_drawing_numb = "V1"
+doc                  = App.activeDocument()
 for obj in doc.Objects:
     page = obj
     if MyTools.obj_is_a_page(page):
@@ -47,7 +49,8 @@ for obj in doc.Objects:
         print(f"page '{obj.Name}'")
         print(f"page_num '{page_num}'")
         value    = f"{page_num}/{last_page_number}"
-        MyTools.set_editable_texts_of_a_page(page, field_name, value)
+        MyTools.set_editable_texts_of_a_page(page, field_sheet_name, value)
+        MyTools.set_editable_texts_of_a_page(page, field_drawing_numb, initial_drawing_numb)
 
 Gui.SendMsgToActiveView("ViewFit")
 # Macro End: /home/spot/.local/share/FreeCAD/Macro/newTechDraw_std.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

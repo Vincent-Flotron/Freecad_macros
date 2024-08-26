@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/spot/.local/share/FreeCAD/Macro/SetScaleDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+import FreeCADGui as     Gui
+import MyTools
+
+# Get the selected object
+selected_obj = Gui.Selection.getSelection()
+
+if MyTools.is_DrawProjGroup(selected_obj):
+    page  = MyTools.get_Page_of_DrawProjGroupItem(selected_obj)
+    group = selected_obj
+else:
+    page       = MyTools.get_page_of_DrawProjGroupItem(          selected_obj )
+    group      = MyTools.get_DrawProjGroup_of_DrawProjGroupItem( selected_obj )
+
+print(f"group: {group}")
+
+field_name       = "FC-SC"
+scale_fractional = MyTools.decimal_to_fraction(group.Scale)
+MyTools.set_editable_texts_of_a_page(page, field_name, scale_fractional)
+
+# print( f"Part Name   : {part_name }" )
+# print( f"Scale       : {group.Scale }" )
+# print( f"Parent Page : {page.Name }" )
+# print( f"Field Name  : {field_name}" )
+
+
+# Macro End: /home/spot/.local/share/FreeCAD/Macro/SetScaleDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

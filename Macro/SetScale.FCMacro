@@ -1,0 +1,65 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/spot/.local/share/FreeCAD/Macro/SetScale.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+# import FreeCAD
+# import FreeCADGui
+from PySide import QtGui
+import MyTools
+
+def parse_scale(scale_str):
+    # Check if it's a fraction
+    if '/' in scale_str:
+        try:
+            num, denom = map(float, scale_str.split('/'))
+            return num / denom
+        except ValueError:
+            return None
+    # Check if it's a decimal
+    else:
+        try:
+            return float(scale_str)
+        except ValueError:
+            return None
+
+def apply_scale():
+    # Get the selected object
+    selection = FreeCADGui.Selection.getSelection()
+    
+    if not selection:
+        QtGui.QMessageBox.warning(None, "Warning", "No object selected.")
+        return
+    
+    obj = selection[0]
+    
+    # Check if the selected object is of the correct type
+    if not (obj.isDerivedFrom("TechDraw::DrawProjGroupItem") or obj.isDerivedFrom("TechDraw::DrawProjGroup")):
+        QtGui.QMessageBox.warning(None, "Warning", "Selected object must be a TechDraw::DrawProjGroupItem or TechDraw::DrawProjGroup.")
+        return
+    
+    # Ask for scale
+    scale_str, ok = QtGui.QInputDialog.getText(None, "Set Scale", "Enter scale value (e.g., 0.1 or 1/10):")
+    
+    if ok:
+        scale = parse_scale(scale_str)
+        if scale is None:
+            QtGui.QMessageBox.warning(None, "Error", "Invalid scale format. Please use a decimal number or a fraction.")
+            return
+        
+        # Apply scale to the object
+        if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
+            obj       = MyTools.get_DrawProjGroup_of_DrawProjGroupItem(selection)
+            obj.Scale = scale
+        elif obj.isDerivedFrom("TechDraw::DrawProjGroup"):
+            obj.Scale = scale
+        
+        FreeCAD.ActiveDocument.recompute()
+        QtGui.QMessageBox.information(None, "Success", f"Scale set to {scale}")
+    else:
+        QtGui.QMessageBox.information(None, "Cancelled", "Scale change cancelled")
+
+# Run the function
+apply_scale()
+
+
+# Gui.runCommand('Std_DlgMacroRecord',0)
+# Macro End: /home/spot/.local/share/FreeCAD/Macro/SetScale.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
