@@ -1,0 +1,25 @@
+import FreeCADGui as Gui
+
+# Get the list of selected objects
+selected_objects = Gui.Selection.getSelection()
+
+# Check if at least one object is selected
+if selected_objects:
+    for obj in selected_objects:
+        print(f"Attributes of object: {obj.Name}")
+        print("=" * 40)
+        
+        # Get all attributes and methods of the object
+        attributes = dir(obj)
+        
+        for attr in attributes:
+            try:
+                # Attempt to retrieve the value of each attribute
+                value = getattr(obj, attr)
+                print(f"{attr}: {value}")
+            except Exception as e:
+                print(f"{attr}: (Could not retrieve value, {e})")
+        
+        print("\n")
+else:
+    print("No object selected.")

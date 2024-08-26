@@ -1,0 +1,22 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/spot/.local/share/FreeCAD/Macro/LockPos.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+import FreeCADGui as Gui
+
+# Get the list of selected objects
+selected_objects = Gui.Selection.getSelection()
+
+# Check if at least one object is selected
+if selected_objects:
+    for obj in selected_objects:
+        # Check if the object has a 'Source' attribute
+        if hasattr(obj, 'Source'):
+            source = obj.Source
+            print(f"Object: {obj.Name}, Source: {source}")
+        else:
+            print(f"Object: {obj.Name} does not have a Source attribute.")
+else:
+    print("No object selected.")
+
+
+# Macro End: /home/spot/.local/share/FreeCAD/Macro/LockPos.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

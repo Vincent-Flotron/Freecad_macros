@@ -1,0 +1,22 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/spot/.local/share/FreeCAD/Macro/NameDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+
+import FreeCADGui as     Gui
+import MyTools
+
+# Get the selected object
+selected_obj = Gui.Selection.getSelection()
+
+page       = MyTools.get_page_of_DrawProjGroupItem(     selected_obj )
+part_name  = MyTools.get_partname_of_DrawProjGroupItem( selected_obj )
+
+field_name = "Subtitle"
+MyTools.set_editable_texts_of_a_page(page, field_name, part_name)
+
+print( f"Part Name   : {part_name }" )
+print( f"Parent Page : {page.Name }" )
+print( f"Field Name  : {field_name}" )
+
+
+# Macro End: /home/spot/.local/share/FreeCAD/Macro/NameDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
