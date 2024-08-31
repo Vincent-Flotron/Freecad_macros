@@ -3,11 +3,12 @@ from PySide import QtGui, QtCore
 import xml.etree.ElementTree as ET
 
 # Function to classify the attributes of the object
+# Function to classify the attributes of the object
 def classify_attributes(obj):
-    content = []
     properties = []
     dunder_attributes = []
     methods = []
+    content_xml = None
 
     for attr in dir(obj):
         try:
@@ -17,35 +18,50 @@ def classify_attributes(obj):
             elif callable(value):
                 methods.append(attr)
             elif attr == "Content":
-                content = parse_content(value)
+                content_xml = value  # Save the XML content for later
             else:
                 properties.append(attr)
-        except Exception as e:
+        except Exception:
             pass
 
-    return content, properties, dunder_attributes, methods
+    return content_xml, properties, dunder_attributes, methods
 
-# Function to parse the Content XML
-def parse_content(xml_content):
-    content_list = []
-    print(xml_content)
+# Function to parse the Content XML and add it to the tree view
+def parse_content_and_add_to_tree(parent_item, xml_content):
     try:
-        root = ET.fromstring(xml_content)
-        print(root)
-        for elem in root.iter():
-            content_list.append(ET.tostring(elem, encoding='unicode', method='xml').strip())
-    except ET.ParseError:
-        content_list.append("Invalid XML content")
-    return content_list
+        # Parse the XML string
+        root = ET.ElementTree(ET.fromstring(f"<root>{xml_content}</root>")).getroot()
+        
+        # Recursively add the children to the tree view
+        for child in root:
+            add_xml_to_tree(parent_item, child)
+    except ET.ParseError as e:
+        error_item = QtGui.QTreeWidgetItem(parent_item, [f"Invalid XML content: {e}"])
+
+# Function to add XML elements to the tree view recursively
+def add_xml_to_tree(parent_item, element):
+    # Create a new tree item with the tag and attributes
+    attrs = ", ".join([f'{k}="{v}"' for k, v in element.attrib.items()])
+    text = f"{element.tag} ({attrs})" if attrs else element.tag
+    item = QtGui.QTreeWidgetItem(parent_item, [text])
+    
+    # If the element has text content, add it as a child node
+    if element.text and element.text.strip():
+        QtGui.QTreeWidgetItem(item, [element.text.strip()])
+    
+    # Recursively add the element's children
+    for child in element:
+        add_xml_to_tree(item, child)
+
 
 # Function to populate the TreeView
-def populate_tree(tree, content, properties, dunder_attributes, methods, obj):
+def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj):
     root = tree.invisibleRootItem()
 
     # Content node
-    content_node = QtGui.QTreeWidgetItem(root, ["Content"])
-    for item in content:
-        QtGui.QTreeWidgetItem(content_node, [item])
+    if content_xml:
+        content_node = QtGui.QTreeWidgetItem(root, ["Content"])
+        parse_content_and_add_to_tree(content_node, content_xml)
 
     # Properties node
     properties_node = QtGui.QTreeWidgetItem(root, ["Properties"])
@@ -89,7 +105,5 @@ class PropertyTreeView(QtGui.QMainWindow):
             QtGui.QMessageBox.information(self, "No Selection", "No object selected.")
 
 if __name__ == "__main__":
-    # app = QtGui.QApplication([])
     window = PropertyTreeView()
     window.show()
-    # app.exec_()
