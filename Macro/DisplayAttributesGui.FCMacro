@@ -1,0 +1,95 @@
+import FreeCADGui as Gui
+from PySide import QtGui, QtCore
+import xml.etree.ElementTree as ET
+
+# Function to classify the attributes of the object
+def classify_attributes(obj):
+    content = []
+    properties = []
+    dunder_attributes = []
+    methods = []
+
+    for attr in dir(obj):
+        try:
+            value = getattr(obj, attr)
+            if attr.startswith('__') and attr.endswith('__'):
+                dunder_attributes.append(attr)
+            elif callable(value):
+                methods.append(attr)
+            elif attr == "Content":
+                content = parse_content(value)
+            else:
+                properties.append(attr)
+        except Exception as e:
+            pass
+
+    return content, properties, dunder_attributes, methods
+
+# Function to parse the Content XML
+def parse_content(xml_content):
+    content_list = []
+    print(xml_content)
+    try:
+        root = ET.fromstring(xml_content)
+        print(root)
+        for elem in root.iter():
+            content_list.append(ET.tostring(elem, encoding='unicode', method='xml').strip())
+    except ET.ParseError:
+        content_list.append("Invalid XML content")
+    return content_list
+
+# Function to populate the TreeView
+def populate_tree(tree, content, properties, dunder_attributes, methods, obj):
+    root = tree.invisibleRootItem()
+
+    # Content node
+    content_node = QtGui.QTreeWidgetItem(root, ["Content"])
+    for item in content:
+        QtGui.QTreeWidgetItem(content_node, [item])
+
+    # Properties node
+    properties_node = QtGui.QTreeWidgetItem(root, ["Properties"])
+    for prop in properties:
+        value = getattr(obj, prop, "(Could not retrieve value)")
+        QtGui.QTreeWidgetItem(properties_node, [f"{prop}: {value}"])
+
+    # Dunder Attributes node
+    dunder_node = QtGui.QTreeWidgetItem(root, ["Dunder Attributes"])
+    for dunder in dunder_attributes:
+        value = getattr(obj, dunder, "(Could not retrieve value)")
+        QtGui.QTreeWidgetItem(dunder_node, [f"{dunder}: {value}"])
+
+    # Methods node
+    methods_node = QtGui.QTreeWidgetItem(root, ["Methods"])
+    for method in methods:
+        QtGui.QTreeWidgetItem(methods_node, [method])
+
+# Main application code
+class PropertyTreeView(QtGui.QMainWindow):
+    def __init__(self, parent=None):
+        super(PropertyTreeView, self).__init__(parent)
+        self.setWindowTitle('Object Properties')
+
+        # Create TreeView widget
+        self.tree = QtGui.QTreeWidget()
+        self.tree.setColumnCount(1)
+        self.tree.setHeaderLabels(['Property'])
+
+        self.setCentralWidget(self.tree)
+        self.resize(800, 600)
+
+        # Get the list of selected objects
+        selected_objects = Gui.Selection.getSelection()
+
+        if selected_objects:
+            for obj in selected_objects:
+                content, properties, dunder_attributes, methods = classify_attributes(obj)
+                populate_tree(self.tree, content, properties, dunder_attributes, methods, obj)
+        else:
+            QtGui.QMessageBox.information(self, "No Selection", "No object selected.")
+
+if __name__ == "__main__":
+    # app = QtGui.QApplication([])
+    window = PropertyTreeView()
+    window.show()
+    # app.exec_()

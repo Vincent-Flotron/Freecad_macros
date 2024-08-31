@@ -17,6 +17,7 @@ if selected_objects:
                 # Attempt to retrieve the value of each attribute
                 value = getattr(obj, attr)
                 print(f"{attr}: {value}")
+                print(f"type: {type(value)}")
             except Exception as e:
                 print(f"{attr}: (Could not retrieve value, {e})")
         
