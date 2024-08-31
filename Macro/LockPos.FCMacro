@@ -10,11 +10,11 @@ selected_objects = Gui.Selection.getSelection()
 if selected_objects:
     for obj in selected_objects:
         # Check if the object has a 'Source' attribute
-        if hasattr(obj, 'Source'):
-            source = obj.Source
-            print(f"Object: {obj.Name}, Source: {source}")
+        if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
+            obj.LockPosition = not obj.LockPosition
+            print(f"Object: {obj.Name}.LockPosition: {obj.LockPosition}")
         else:
-            print(f"Object: {obj.Name} does not have a Source attribute.")
+            print(f"Selected object must be a TechDraw::DrawProjGroupItem")
 else:
     print("No object selected.")
 

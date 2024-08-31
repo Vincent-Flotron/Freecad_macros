@@ -121,22 +121,26 @@ def get_page_number_of_DrawPage(obj):
 def obj_is_a_page(obj):
     return obj.TypeId == 'TechDraw::DrawPage'
 
-def get_partname_of_DrawProjGroupItem(selected_objects):
+def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
     """
     Parameter:
         selected_objects = Gui.Selection.getSelection()
     """
-
+    part_name_until_sep = None
     # Check if at least one object is selected
     if selected_objects:
         for obj in selected_objects:
             # Check if the object is of type 'TechDraw::DrawProjGroupItem'
             if obj.TypeId == 'TechDraw::DrawProjGroupItem':
-                # Safely access Source and Label
+                # Get part name until underscore by safely access Source and Label
                 try:
-                    sep = '_'
-                    part_name_until_sep = obj.Source[0].Label.split(sep)[0]
-                    # print(f"Part name until _: {part_name_until_sep}")
+                    # TechDraw::DrawProjGroupItem was made from selected body
+                    if obj.Source[0].TypeId != "PartDesign::Body":
+                        print(f'obj.Source[0].InListRecursive[0]: {obj.Source[0].InListRecursive[0].TypeId}')
+                        part_name_until_sep = obj.Source[0].InListRecursive[0].Label.split(sep)[0]
+                    # TechDraw::DrawProjGroupItem was made from selected body's subf-function (like 'Pocket026')
+                    else:
+                        part_name_until_sep = obj.Source[0].Label.split(sep)[0]
                     return part_name_until_sep
                 except Exception as e:
                     print(f"Could not access Source or Label: {e}")
