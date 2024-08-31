@@ -2,30 +2,6 @@ import FreeCADGui as Gui
 from PySide import QtGui, QtCore
 import xml.etree.ElementTree as ET
 
-# Function to classify the attributes of the object
-# Function to classify the attributes of the object
-def classify_attributes(obj):
-    properties = []
-    dunder_attributes = []
-    methods = []
-    content_xml = None
-
-    for attr in dir(obj):
-        try:
-            value = getattr(obj, attr)
-            if attr.startswith('__') and attr.endswith('__'):
-                dunder_attributes.append(attr)
-            elif callable(value):
-                methods.append(attr)
-            elif attr == "Content":
-                content_xml = value  # Save the XML content for later
-            else:
-                properties.append(attr)
-        except Exception:
-            pass
-
-    return content_xml, properties, dunder_attributes, methods
-
 # Function to parse the Content XML and add it to the tree view
 def parse_content_and_add_to_tree(parent_item, xml_content):
     try:
@@ -53,6 +29,45 @@ def add_xml_to_tree(parent_item, element):
     for child in element:
         add_xml_to_tree(item, child)
 
+# Function to add collections (tuples, lists, dicts) to the tree view
+def add_collection_to_tree(parent_item, collection):
+    if isinstance(collection, (tuple, list)):
+        for i, value in enumerate(collection):
+            item = QtGui.QTreeWidgetItem(parent_item, [f"Index {i}"])
+            if isinstance(value, (tuple, list, dict)):
+                add_collection_to_tree(item, value)
+            else:
+                QtGui.QTreeWidgetItem(item, [str(value)])
+    elif isinstance(collection, dict):
+        for key, value in collection.items():
+            item = QtGui.QTreeWidgetItem(parent_item, [str(key)])
+            if isinstance(value, (tuple, list, dict)):
+                add_collection_to_tree(item, value)
+            else:
+                QtGui.QTreeWidgetItem(item, [str(value)])
+
+# Function to classify the attributes of the object
+def classify_attributes(obj):
+    properties = []
+    dunder_attributes = []
+    methods = []
+    content_xml = None
+
+    for attr in dir(obj):
+        try:
+            value = getattr(obj, attr)
+            if attr.startswith('__') and attr.endswith('__'):
+                dunder_attributes.append(attr)
+            elif callable(value):
+                methods.append(attr)
+            elif attr == "Content":
+                content_xml = value  # Save the XML content for later
+            else:
+                properties.append((attr, value))
+        except Exception:
+            pass
+
+    return content_xml, properties, dunder_attributes, methods
 
 # Function to populate the TreeView
 def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj):
@@ -65,9 +80,12 @@ def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj
 
     # Properties node
     properties_node = QtGui.QTreeWidgetItem(root, ["Properties"])
-    for prop in properties:
-        value = getattr(obj, prop, "(Could not retrieve value)")
-        QtGui.QTreeWidgetItem(properties_node, [f"{prop}: {value}"])
+    for prop, value in properties:
+        prop_item = QtGui.QTreeWidgetItem(properties_node, [prop])
+        if isinstance(value, (tuple, list, dict)):
+            add_collection_to_tree(prop_item, value)
+        else:
+            QtGui.QTreeWidgetItem(prop_item, [str(value)])
 
     # Dunder Attributes node
     dunder_node = QtGui.QTreeWidgetItem(root, ["Dunder Attributes"])
@@ -79,6 +97,7 @@ def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj
     methods_node = QtGui.QTreeWidgetItem(root, ["Methods"])
     for method in methods:
         QtGui.QTreeWidgetItem(methods_node, [method])
+
 
 # Main application code
 class PropertyTreeView(QtGui.QMainWindow):
