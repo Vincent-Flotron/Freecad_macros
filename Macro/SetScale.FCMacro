@@ -37,7 +37,8 @@ def apply_scale():
         return
     
     # Ask for scale
-    scale_str, ok = QtGui.QInputDialog.getText(None, "Set Scale", "Enter scale value (e.g., 0.1 or 1/10):")
+    scale_fractional = MyTools.decimal_to_fraction(obj.Scale)
+    scale_str, ok = QtGui.QInputDialog.getText(None, "Set Scale", f"Enter scale value (e.g., 0.1 or 1/10):\nActual Scale: {scale_fractional}")
     
     if ok:
         scale = parse_scale(scale_str)
@@ -47,13 +48,16 @@ def apply_scale():
         
         # Apply scale to the object
         if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
-            obj       = MyTools.get_DrawProjGroup_of_DrawProjGroupItem(selection)
-            obj.Scale = scale
+            obj           = MyTools.get_DrawProjGroup_of_DrawProjGroupItem(selection)
+            obj.ScaleType = 2
+            obj.Scale     = scale
         elif obj.isDerivedFrom("TechDraw::DrawProjGroup"):
-            obj.Scale = scale
+            obj.ScaleType = 2
+            obj.Scale     = scale
         
         FreeCAD.ActiveDocument.recompute()
-        QtGui.QMessageBox.information(None, "Success", f"Scale set to {scale}")
+        new_scale_fractional = MyTools.decimal_to_fraction(obj.Scale)
+        QtGui.QMessageBox.information(None, "Success", f"Scale set to {new_scale_fractional} ({scale})")
     else:
         QtGui.QMessageBox.information(None, "Cancelled", "Scale change cancelled")
 
