@@ -1,7 +1,7 @@
 #Gui.Selection.addSelection('Maison2','Body026')
-import FreeCAD as App
-import FreeCADGui as Gui
-from PySide import QtGui
+import FreeCAD    as     App
+import FreeCADGui as     Gui
+from PySide       import QtGui
 
 def get_selected_object():
     sel = Gui.Selection.getSelection()

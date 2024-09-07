@@ -1,7 +1,8 @@
 # import FreeCAD as App
-import FreeCAD as App
-from fractions import Fraction
-from collections import deque
+import FreeCAD     as     App
+from   fractions   import Fraction
+from   collections import deque
+from   PySide      import QtGui
 
 def get_page_of_DrawProjGroupItem(selected_objects):
     """
@@ -164,6 +165,21 @@ def get_highest_page_number():
         if page_num > max_page_num:
             max_page_num = page_num
     return max_page_num
+
+def lock_objects(selected_objects):
+    # Check if at least one object is selected
+    if selected_objects:
+        for obj in selected_objects:
+            # Check if the object has a 'Source' attribute
+            if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
+                obj.LockPosition = not obj.LockPosition
+                # print(f"Object: {obj.Name}.LockPosition: {obj.LockPosition}")
+            else:
+                QtGui.QMessageBox.warning(None, "Bad Selection", f"Selected object must be a TechDraw::DrawProjGroupItem.\n Actually is type: '{obj.TypeId}'")
+                # print(f"Selected object must be a TechDraw::DrawProjGroupItem")
+    else:
+        QtGui.QMessageBox.warning(None, "No Selection", "Please select one or more object(s) first.")
+        # print("No object selected.")
 
 class myQueue(deque):
     pass

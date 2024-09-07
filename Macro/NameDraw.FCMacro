@@ -3,6 +3,10 @@
 # Macro Begin: /home/spot/.local/share/FreeCAD/Macro/NameDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
 
 import FreeCADGui as     Gui
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
 import MyTools
 
 # Get the selected object

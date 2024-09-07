@@ -2,7 +2,11 @@
 
 # Macro Begin: /home/spot/.local/share/FreeCAD/Macro/newTechDraw_std.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
 import FreeCAD  as App
-import TechDraw
+# import TechDraw
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
 import MyTools
 
 # Set the template path

@@ -2,21 +2,15 @@
 
 # Macro Begin: /home/spot/.local/share/FreeCAD/Macro/LockPos.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
 import FreeCADGui as Gui
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
 
 # Get the list of selected objects
 selected_objects = Gui.Selection.getSelection()
-
-# Check if at least one object is selected
-if selected_objects:
-    for obj in selected_objects:
-        # Check if the object has a 'Source' attribute
-        if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
-            obj.LockPosition = not obj.LockPosition
-            print(f"Object: {obj.Name}.LockPosition: {obj.LockPosition}")
-        else:
-            print(f"Selected object must be a TechDraw::DrawProjGroupItem")
-else:
-    print("No object selected.")
+MyTools.lock_objects(selected_objects)
 
 
 # Macro End: /home/spot/.local/share/FreeCAD/Macro/LockPos.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
