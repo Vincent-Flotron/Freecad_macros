@@ -1,150 +1,138 @@
-from PySide import QtGui
-import xml.etree.ElementTree as ET
-import FreeCAD as App
+import sys
+if 'DisplayAttributes_module' in sys.modules:
+    del sys.modules['DisplayAttributes_module']
+import DisplayAttributes_module as dam
 
-# Function to add list or tuple elements to the tree view recursively
-def add_list_or_tuple_to_tree(parent_item, item_list, depth):
-    for index, item in enumerate(item_list):
-        if isinstance(item, (list, tuple)):
-            list_item = QtGui.QTreeWidgetItem(parent_item, [f"[{index}]"])
-            add_list_or_tuple_to_tree(list_item, item, depth)
-        else:
-            prop_node = QtGui.QTreeWidgetItem(parent_item, [f"[{index}] {item}"])
 
-            # unfold_if_freecad_obj(prop_node, item, depth)
-            unfold_if_freecad_obj(prop_node, item, depth)
 
-# Function to parse the Content XML and add it to the tree view
-def parse_content_and_add_to_tree(parent_item, xml_content):
-    try:
-        root = ET.ElementTree(ET.fromstring(f"<root>{xml_content}</root>")).getroot()
-        for child in root:
-            add_xml_to_tree(parent_item, child)
-    except ET.ParseError as e:
-        error_item = QtGui.QTreeWidgetItem(parent_item, [f"Invalid XML content: {e}"])
+# import FreeCADGui as Gui
+# from PySide import QtGui, QtCore
+# import xml.etree.ElementTree as ET
 
-# Function to add XML elements to the tree view recursively
-def add_xml_to_tree(parent_item, element):
-    attrs = ", ".join([f'{k}="{v}"' for k, v in element.attrib.items()])
-    text = f"{element.tag} ({attrs})" if attrs else element.tag
-    item = QtGui.QTreeWidgetItem(parent_item, [text])
+# # Function to parse the Content XML and add it to the tree view
+# def parse_content_and_add_to_tree(parent_item, xml_content):
+#     try:
+#         # Parse the XML string
+#         root = ET.ElementTree(ET.fromstring(f"<root>{xml_content}</root>")).getroot()
+        
+#         # Recursively add the children to the tree view
+#         for child in root:
+#             add_xml_to_tree(parent_item, child)
+#     except ET.ParseError as e:
+#         error_item = QtGui.QTreeWidgetItem(parent_item, [f"Invalid XML content: {e}"])
+
+# # Function to add XML elements to the tree view recursively
+# def add_xml_to_tree(parent_item, element):
+#     # Create a new tree item with the tag and attributes
+#     attrs = ", ".join([f'{k}="{v}"' for k, v in element.attrib.items()])
+#     text = f"{element.tag} ({attrs})" if attrs else element.tag
+#     item = QtGui.QTreeWidgetItem(parent_item, [text])
     
-    if element.text and element.text.strip():
-        QtGui.QTreeWidgetItem(item, [element.text.strip()])
+#     # If the element has text content, add it as a child node
+#     if element.text and element.text.strip():
+#         QtGui.QTreeWidgetItem(item, [element.text.strip()])
     
-    for child in element:
-        add_xml_to_tree(item, child)
+#     # Recursively add the element's children
+#     for child in element:
+#         add_xml_to_tree(item, child)
 
-def is_freecad_object(obj):
-    return isinstance(obj, App.DocumentObject)
+# # Function to add collections (tuples, lists, dicts) to the tree view
+# def add_collection_to_tree(parent_item, collection):
+#     if isinstance(collection, (tuple, list)):
+#         for i, value in enumerate(collection):
+#             item = QtGui.QTreeWidgetItem(parent_item, [f"Index {i}"])
+#             if isinstance(value, (tuple, list, dict)):
+#                 add_collection_to_tree(item, value)
+#             else:
+#                 QtGui.QTreeWidgetItem(item, [str(value)])
+#     elif isinstance(collection, dict):
+#         for key, value in collection.items():
+#             item = QtGui.QTreeWidgetItem(parent_item, [str(key)])
+#             if isinstance(value, (tuple, list, dict)):
+#                 add_collection_to_tree(item, value)
+#             else:
+#                 QtGui.QTreeWidgetItem(item, [str(value)])
 
-# Function to classify the attributes of the object
-def classify_attributes(obj):
-    properties = []
-    dunder_attributes = []
-    methods = []
-    content_xml = None
-    print('BLA')
-    for attr in dir(obj):
-        try:
-            value = getattr(obj, attr)
-            if attr.startswith('__') and attr.endswith('__'):
-                dunder_attributes.append(attr)
-            elif callable(value):
-                methods.append(attr)
-            elif attr == "Content":
-                content_xml = value
-            else:
-                properties.append((attr, value, type(value)))
-                # if attr == "InListRecursive":
-                # print(f"attribute '{attr}': {value}")
-                # if isinstance(value, (list, tuple)):
-                #     for c, t in enumerate(value):
-                #         print(f"--> c '{c}': '{t}', FC? '{is_freecad_object(t)}'")
-                # else:
-                #     print(f"--x               , FC? '{is_freecad_object(value)}'")
-                
-                # print(f"attr '{attr}', value '{value}', type(value) '{type(value)}'")
-        except Exception:
-            print("Exception")
-            pass
+# # Function to classify the attributes of the object
+# def classify_attributes(obj):
+#     properties = []
+#     dunder_attributes = []
+#     methods = []
+#     content_xml = None
 
-    return content_xml, properties, dunder_attributes, methods
+#     for attr in dir(obj):
+#         try:
+#             value = getattr(obj, attr)
+#             if attr.startswith('__') and attr.endswith('__'):
+#                 dunder_attributes.append(attr)
+#             elif callable(value):
+#                 methods.append(attr)
+#             elif attr == "Content":
+#                 content_xml = value  # Save the XML content for later
+#             else:
+#                 properties.append((attr, value))
+#         except Exception:
+#             pass
 
-def unfold_if_freecad_obj(prop_node, obj, depth):
-    if is_freecad_object(obj) and obj.TypeId in ['TechDraw::DrawProjGroupItem', 'TechDraw::DrawProjGroup', ]:
-        print(f"unfold_if_freecad_obj: '{obj.Name}'")
-        content_xml, properties, dunder_attributes, methods = classify_attributes(obj)
-        populate_tree(prop_node, content_xml, properties, dunder_attributes, methods, obj, depth)
+#     return content_xml, properties, dunder_attributes, methods
 
-# Function to populate the TreeView
-def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj, depth=2):
-    if depth <= 0:
-        depth=2
-        print('return')
-        return
-    depth-=1
+# # Function to populate the TreeView
+# def populate_tree(tree, content_xml, properties, dunder_attributes, methods, obj):
+#     root = tree.invisibleRootItem()
 
-    # print(f"is main tree : {type(tree) == 'PySide2.QtWidgets.QTreeWidget'}")
-    print(f"is main tree : {type(tree).__name__ == 'QTreeWidget'}")
-    print(f"type(tree)   : {type(tree)}")
-    if type(tree).__name__ == 'QTreeWidget':
-        root = tree.invisibleRootItem()
+#     # Content node
+#     if content_xml:
+#         content_node = QtGui.QTreeWidgetItem(root, ["Content"])
+#         parse_content_and_add_to_tree(content_node, content_xml)
 
-        # Content node
-        if content_xml:
-            content_node = QtGui.QTreeWidgetItem(root, ["Content"])
-            parse_content_and_add_to_tree(content_node, content_xml)
+#     # Properties node
+#     properties_node = QtGui.QTreeWidgetItem(root, ["Properties"])
+#     for prop, value in properties:
+#         prop_item = QtGui.QTreeWidgetItem(properties_node, [prop])
+#         if isinstance(value, (tuple, list, dict)):
+#             add_collection_to_tree(prop_item, value)
+#         else:
+#             QtGui.QTreeWidgetItem(prop_item, [str(value)])
 
-        # Properties node
-        properties_node = QtGui.QTreeWidgetItem(root, ["Properties"])
-    else:
-        properties_node = tree
-    for prop, value, prp_type in properties:
-        if isinstance(value, (list, tuple)):
-            prop_node = QtGui.QTreeWidgetItem(properties_node, [f"{prop}: {prp_type}; {len(value)}"])
-            add_list_or_tuple_to_tree(prop_node, value, depth)
-        else:
-            prop_node = QtGui.QTreeWidgetItem(properties_node, [f"{prop}: {value}"])
-            unfold_if_freecad_obj(prop_node, value, depth)
+#     # Dunder Attributes node
+#     dunder_node = QtGui.QTreeWidgetItem(root, ["Dunder Attributes"])
+#     for dunder in dunder_attributes:
+#         value = getattr(obj, dunder, "(Could not retrieve value)")
+#         QtGui.QTreeWidgetItem(dunder_node, [f"{dunder}: {value}"])
 
-    return
-    # Dunder Attributes node
-    dunder_node = QtGui.QTreeWidgetItem(root, ["Dunder Attributes"])
-    for dunder in dunder_attributes:
-        value = getattr(obj, dunder, "(Could not retrieve value)")
-        QtGui.QTreeWidgetItem(dunder_node, [f"{dunder}: {value}"])
-
-    # Methods node
-    methods_node = QtGui.QTreeWidgetItem(root, ["Methods"])
-    for method in methods:
-        QtGui.QTreeWidgetItem(methods_node, [method])
+#     # Methods node
+#     methods_node = QtGui.QTreeWidgetItem(root, ["Methods"])
+#     for method in methods:
+#         QtGui.QTreeWidgetItem(methods_node, [method])
 
 
-# Main application code
-class PropertyTreeView(QtGui.QMainWindow):
-    def __init__(self, parent=None):
-        super(PropertyTreeView, self).__init__(parent)
-        self.setWindowTitle('Object Properties')
+# # Main application code
+# class PropertyTreeView(QtGui.QMainWindow):
+#     def __init__(self, parent=None):
+#         super(PropertyTreeView, self).__init__(parent)
+#         self.setWindowTitle('Object Properties')
 
-        # Create TreeView widget
-        self.tree = QtGui.QTreeWidget()
-        self.tree.setColumnCount(1)
-        self.tree.setHeaderLabels(['Property'])
+#         # Create TreeView widget
+#         self.tree = QtGui.QTreeWidget()
+#         self.tree.setColumnCount(1)
+#         self.tree.setHeaderLabels(['Property'])
 
-        self.setCentralWidget(self.tree)
-        self.resize(800, 600)
+#         self.setCentralWidget(self.tree)
+#         self.resize(800, 600)
 
-        # Get the list of selected objects
-        selected_objects = Gui.Selection.getSelection()
+#         # Get the list of selected objects
+#         selected_objects = Gui.Selection.getSelection()
 
-        if selected_objects:
-            for obj in selected_objects:
-                content_xml, properties, dunder_attributes, methods = classify_attributes(obj)
-                populate_tree(self.tree, content_xml, properties, dunder_attributes, methods, obj)
-        else:
-            QtGui.QMessageBox.information(self, "No Selection", "No object selected.")
+#         if selected_objects:
+#             for obj in selected_objects:
+#                 content, properties, dunder_attributes, methods = classify_attributes(obj)
+#                 populate_tree(self.tree, content, properties, dunder_attributes, methods, obj)
+#         else:
+#             QtGui.QMessageBox.information(self, "No Selection", "No object selected.")
 
 if __name__ == "__main__":
-    window = PropertyTreeView()
-    window.show()
+    dam.display_attributes()
+    
+
+
+    

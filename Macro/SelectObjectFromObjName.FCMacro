@@ -1,0 +1,64 @@
+#Gui.Selection.addSelection('Maison2','Body026')
+import FreeCAD as App
+import FreeCADGui as Gui
+from PySide import QtGui
+
+def get_selected_object():
+    sel = Gui.Selection.getSelection()
+    if not sel:
+        QtGui.QMessageBox.warning(None, "No Selection", "Please select an object first.")
+        return None
+    return sel[0]
+
+def get_related_document(obj):
+    return obj.Document
+
+def get_object_name():
+    name, ok = QtGui.QInputDialog.getText(None, "Enter Object Name", "Please enter the object name:")
+    if ok and name:
+        return name
+    return None
+
+def run_macro():
+    # Ask user to select an object
+    selected_obj = get_selected_object()
+    if not selected_obj:
+        return
+
+    # Find and show the related Document
+    related_doc = get_related_document(selected_obj)
+    if related_doc:
+        msg = f"Related Document: {related_doc.Name}"
+        reply = QtGui.QMessageBox.information(None, "Document Found", msg, QtGui.QMessageBox.Ok)
+        if reply != QtGui.QMessageBox.Ok:
+            return
+    else:
+        QtGui.QMessageBox.warning(None, "No Document", "No related document found.")
+        return
+
+    # Ask for object name
+    object_name = get_object_name()
+    if not object_name:
+        return
+
+    # Select the object
+    try:
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(related_doc.Name, object_name)
+    except:
+        QtGui.QMessageBox.warning(None, "Selection Failed", f"Failed to select object '{object_name}' in document '{related_doc.Name}'.")
+        return
+
+    # Call DisplayAttributesGui macro
+    try:
+        import sys
+        if 'DisplayAttributes_module' in sys.modules:
+            del sys.modules['DisplayAttributes_module']
+        import DisplayAttributes_module as dam
+    except ImportError:
+        QtGui.QMessageBox.warning(None, "Macro Not Found", "DisplayAttributesGui macro not found. Please ensure it's installed.")
+
+    dam.display_attributes()
+
+if __name__ == "__main__":  
+    run_macro()

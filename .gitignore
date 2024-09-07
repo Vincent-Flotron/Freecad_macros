@@ -1,5 +1,5 @@
-webdata
 Macro/__pycache__
 Mod/log.log
-Mod/ProDarkThemePreferencePack*
-SavedPreferencePacks/*
+Mod/ProDarkThemePreferencePack
+SavedPreferencePacks
+webdata
