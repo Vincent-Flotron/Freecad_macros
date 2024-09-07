@@ -20,7 +20,18 @@ last_ProjGroup          = MyTools.get_highest_ProjGroup_number(doc)
 new_ProjGroup_numb      = last_ProjGroup + 1
 new_ProjGroup_name      = f"ProjGroup{new_ProjGroup_numb:03}"
 new_ProjGroup           = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
-new_ProjGroup.Source    = selected_objects
+
+# Select only Body
+sel_objs = []
+
+for sel_obj in selected_objects:
+    if sel_obj.TypeId != 'TechDraw::Body':
+        sel_objs.append(MyTools.find_body_parent(sel_obj))
+    else:
+        sel_objs.append(sel_obj)
+
+selected_objects     = sel_objs
+new_ProjGroup.Source = selected_objects
 
 # Set the scale
 new_ProjGroup.ScaleType = 1 # Automatic

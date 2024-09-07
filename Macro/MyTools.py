@@ -75,6 +75,36 @@ def get_page_of_DrawProjGroupItem(selected_objects):
         QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroupItem", "Please select a valid object.")
 
 
+# def find_body_parent(obj, depth=0, max_depth=3):
+#     """
+#     Recursively search for the PartDesign::Body parent of an object with a depth limit.
+#     """
+#     if obj is None or depth > max_depth:
+#         return None
+#     if obj.TypeId == 'PartDesign::Body':
+#         return obj
+#     return find_body_parent(obj.getParentGeoFeature(), depth + 1, max_depth)
+
+def find_body_parent(obj, depth=0, max_depth=3):
+    """
+    Recursively search for the PartDesign::Body parent of an object with a depth limit.
+    """
+    if obj is None or depth > max_depth:
+        return None
+    
+    # Check if the current object is of type 'PartDesign::Body'
+    if obj.TypeId == 'PartDesign::Body':
+        return obj
+
+    # Check if the object has parents using the InListRecursive attribute
+    if len(obj.InListRecursive) > 0:
+        parent_obj = obj.InListRecursive[0]  # Get the first parent in the list
+        return find_body_parent(parent_obj, depth + 1, max_depth)
+    
+    return None
+
+
+
 def get_Page_of_DrawProjGroup(selected_objects):
     """
     Parameter:
