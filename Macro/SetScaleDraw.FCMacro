@@ -2,13 +2,17 @@
 
 # Macro Begin: /home/spot/.local/share/FreeCAD/Macro/SetScaleDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
 import FreeCADGui as     Gui
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
 import MyTools
 
 # Get the selected object
 selected_obj = Gui.Selection.getSelection()
 
 if MyTools.is_DrawProjGroup(selected_obj):
-    page  = MyTools.get_Page_of_DrawProjGroupItem(selected_obj)
+    page  = MyTools.get_Page_of_DrawProjGroup(selected_obj)
     group = selected_obj
 else:
     page       = MyTools.get_page_of_DrawProjGroupItem(          selected_obj )
@@ -16,14 +20,7 @@ else:
 
 print(f"group: {group}")
 
-field_name       = "FC-SC"
-scale_fractional = MyTools.decimal_to_fraction(group.Scale)
-MyTools.set_editable_texts_of_a_page(page, field_name, scale_fractional)
-
-# print( f"Part Name   : {part_name }" )
-# print( f"Scale       : {group.Scale }" )
-# print( f"Parent Page : {page.Name }" )
-# print( f"Field Name  : {field_name}" )
+MyTools.set_draw_cartridge_scale(page, group)
 
 
 # Macro End: /home/spot/.local/share/FreeCAD/Macro/SetScaleDraw.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

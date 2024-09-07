@@ -44,8 +44,6 @@ def new_techdraw_page(techdraw_template_path="/home/spot/freecad/A4_LandscapeTD.
         page = obj
         if obj_is_a_page(page):
             page_num = get_page_number_of_DrawPage(page)
-            print(f"page '{obj.Name}'")
-            print(f"page_num '{page_num}'")
             value    = f"{page_num}/{last_page_number}"
             set_editable_texts_of_a_page(page, field_sheet_name, value)
             set_editable_texts_of_a_page(page, field_drawing_numb, initial_drawing_numb)
@@ -54,15 +52,6 @@ def new_techdraw_page(techdraw_template_path="/home/spot/freecad/A4_LandscapeTD.
     Gui.SendMsgToActiveView("ViewFit")
 
     return doc, new_page
-
-
-
-
-
-
-
-
-
 
 
 def get_page_of_DrawProjGroupItem(selected_objects):
@@ -81,12 +70,12 @@ def get_page_of_DrawProjGroupItem(selected_objects):
         if parent_obj and parent_obj.TypeId == 'TechDraw::DrawPage':
             return parent_obj
         else:
-            print("Parent page not found.")
+            QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroupItem", "Parent page not found.")
     else:
-        print("Please select a valid object.")
+        QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroupItem", "Please select a valid object.")
 
 
-def get_Page_of_DrawProjGroupItem(selected_objects):
+def get_Page_of_DrawProjGroup(selected_objects):
     """
     Parameter:
         selected_objects = Gui.Selection.getSelection()
@@ -102,9 +91,9 @@ def get_Page_of_DrawProjGroupItem(selected_objects):
         if parent_obj and parent_obj.TypeId == 'TechDraw::DrawPage':
             return parent_obj
         else:
-            print("Parent Page not found.")
+            QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroup", "Parent Page not found.")
     else:
-        print("Please select a valid object.")
+        QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroup", "Please select a valid object.")
 
 
 def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
@@ -119,15 +108,13 @@ def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
         # Traverse up the hierarchy to find the parent DrawProjGroup
         if len(selected_obj.InListRecursive) > 0:
             parent_obj = selected_obj.InListRecursive[0]
-            
-        print(f"get_DrawProjGroup_of_DrawProjGroupItem : {selected_obj.InListRecursive}")
-        print(f"parent_obj.TypeId                      : {parent_obj.TypeId}")
         if parent_obj and parent_obj.TypeId == 'TechDraw::DrawProjGroup':
             return parent_obj
         else:
-            print("Parent TechDraw::DrawProjGroup not found.")
+            QtGui.QMessageBox.warning(None, "Error getting DrawProjGroup of a DrawProjGroupItem", "Parent TechDraw::DrawProjGroup not found.")
+
     else:
-        print("Please select a valid object.")
+        QtGui.QMessageBox.warning(None, "Error getting DrawProjGroup of a DrawProjGroupItem", "Please select a valid TechDraw::DrawProjGroupItem object.")
 
 def is_DrawProjGroup(selected_object):
     return selected_object == 'TechDraw::DrawProjGroup'
@@ -158,11 +145,11 @@ def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
                 # Recompute the document to apply changes
                 App.activeDocument().recompute()
             else:
-                print(f"{editable_text_name} field not found in the template.")
+                QtGui.QMessageBox.warning(None, "Error setting editable text of a page", f"{editable_text_name} field not found in the template.")
         else:
-            print("No template assigned to the selected page.")
+            QtGui.QMessageBox.warning(None, "Error setting editable text of a page", "No template assigned to the selected page.")
     else:
-        print("Please select a valid TechDraw::DrawPage.")
+        QtGui.QMessageBox.warning(None, "Error setting editable text of a page", "Please select a valid TechDraw::DrawPage.")
 
 
 
@@ -204,6 +191,8 @@ def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
         selected_objects = Gui.Selection.getSelection()
     """
     part_name_until_sep = None
+
+        
     # Check if at least one object is selected
     if selected_objects:
         for obj in selected_objects:
@@ -213,28 +202,36 @@ def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
                 try:
                     # TechDraw::DrawProjGroupItem was made from selected body
                     if obj.Source[0].TypeId != "PartDesign::Body":
-                        print(f'obj.Source[0].InListRecursive[0]: {obj.Source[0].InListRecursive[0].TypeId}')
                         part_name_until_sep = obj.Source[0].InListRecursive[0].Label.split(sep)[0]
                     # TechDraw::DrawProjGroupItem was made from selected body's subf-function (like 'Pocket026')
                     else:
                         part_name_until_sep = obj.Source[0].Label.split(sep)[0]
                     return part_name_until_sep
                 except Exception as e:
-                    print(f"Could not access Source or Label: {e}")
+                    QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", f"Could not access Source or Label: {e}")
             else:
+                QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", f"Object {obj.Name} is not a TechDraw::DrawProjGroupItem.")
                 print(f"Object {obj.Name} is not a TechDraw::DrawProjGroupItem.")
     else:
-        print("No object selected.")
+        QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", "No object selected.")
 
 
 def decimal_to_fraction(decimal):
     fraction = Fraction(decimal).limit_denominator()
     return fraction
 
-# def fraction_to_decimal(fraction_str):
-#     decimal = Fraction(fraction_str).real()
-#     return decimal
+# def name_draw(selected_objs):
+def name_draw(page, selected_objs):
+    part_name  = get_partname_of_DrawProjGroupItem( selected_objs )
 
+    field_name = "Subtitle"
+    set_editable_texts_of_a_page(page, field_name, part_name)
+
+
+def set_draw_cartridge_scale(page, group):
+    field_name       = "FC-SC"
+    scale_fractional = decimal_to_fraction(group.Scale)
+    set_editable_texts_of_a_page(page, field_name, scale_fractional)
 
 def fraction_to_decimal(fraction_str):
     # Remove spaces from the fraction string
@@ -281,12 +278,8 @@ def lock_objects(selected_objects):
 def get_prefered_scale(doc, alias = 'Scale', spreadsheet_name = 'Spreadsheet'):
     # spr = App.getDocument('Maison2').getObject('Spreadsheet')
     spr = doc.getObject(spreadsheet_name)
-    print(f'spr.Name: {spr.Name}')
-    print(f'alias: {alias}')
     aliasValue = spr.getCellFromAlias(alias)
-    print(f'aliasValue: {aliasValue}')
     pref_scale = spr.getContents(aliasValue).split('=')[1]
-    print(f'prefScale: {pref_scale}')
 
     return pref_scale
 
