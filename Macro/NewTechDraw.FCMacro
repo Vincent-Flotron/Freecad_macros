@@ -9,52 +9,6 @@ if mod_to_import in sys.modules:
     del sys.modules[mod_to_import]
 import MyTools
 
-# Set the template path
-template_path = "/home/spot/freecad/A4_LandscapeTD.svg"
 
-# Create a new page number based on the last existing page
-doc = App.activeDocument()
-
-# Find the highest page number
-max_page_num = MyTools.get_highest_page_number()
-
-# Increment the page number for the new page
-new_page_num = max_page_num + 1
-page_nb      = f"{new_page_num:03}"
-
-# Create new page and template names
-page_name     = f'Page{page_nb}'
-template_name = f'Template{page_nb}'
-
-# Create a new page and template in the document
-new_page = doc.addObject( 'TechDraw::DrawPage',        page_name     )
-template = doc.addObject( 'TechDraw::DrawSVGTemplate', template_name )
-
-# Assign the template to the page
-template.Template = template_path
-new_page.Template = template
-
-# Recompute the document to apply changes
-doc.recompute()
-Gui.Selection.clearSelection()
-Gui.Selection.addSelection(App.ActiveDocument.Label,f'Page{page_nb}')
-
-
-# Update all page numbers
-field_sheet_name     = 'FC-SH'
-last_page_number     = new_page_num
-field_drawing_numb   = "Drawing_number"
-initial_drawing_numb = "V1"
-doc                  = App.activeDocument()
-for obj in doc.Objects:
-    page = obj
-    if MyTools.obj_is_a_page(page):
-        page_num = MyTools.get_page_number_of_DrawPage(page)
-        print(f"page '{obj.Name}'")
-        print(f"page_num '{page_num}'")
-        value    = f"{page_num}/{last_page_number}"
-        MyTools.set_editable_texts_of_a_page(page, field_sheet_name, value)
-        MyTools.set_editable_texts_of_a_page(page, field_drawing_numb, initial_drawing_numb)
-
-Gui.SendMsgToActiveView("ViewFit")
+MyTools.new_techdraw_page()
 # Macro End: /home/spot/.local/share/FreeCAD/Macro/newTechDraw_std.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

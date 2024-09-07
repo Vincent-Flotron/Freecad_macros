@@ -1,8 +1,69 @@
 # import FreeCAD as App
 import FreeCAD     as     App
+import FreeCADGui  as     Gui
 from   fractions   import Fraction
 from   collections import deque
 from   PySide      import QtGui
+
+
+def new_techdraw_page(techdraw_template_path="/home/spot/freecad/A4_LandscapeTD.svg"):
+    # Create a new page number based on the last existing page
+    doc = App.activeDocument()
+
+    # Find the highest page number
+    max_page_num = get_highest_page_number(doc)
+
+    # Increment the page number for the new page
+    new_page_num = max_page_num + 1
+    page_nb      = f"{new_page_num:03}"
+
+    # Create new page and template names
+    page_name     = f'Page{page_nb}'
+    template_name = f'Template{page_nb}'
+
+    # Create a new page and template in the document
+    new_page = doc.addObject( 'TechDraw::DrawPage',        page_name     )
+    template = doc.addObject( 'TechDraw::DrawSVGTemplate', template_name )
+
+    # Assign the template to the page
+    template.Template = techdraw_template_path
+    new_page.Template = template
+
+    # Recompute the document to apply changes
+    doc.recompute()
+    Gui.Selection.clearSelection()
+    Gui.Selection.addSelection(App.ActiveDocument.Label, page_name)
+
+    # Update all page numbers
+    field_sheet_name     = 'FC-SH'
+    last_page_number     = new_page_num
+    field_drawing_numb   = "Drawing_number"
+    initial_drawing_numb = "V1"
+    # doc                  = App.activeDocument()
+    for obj in doc.Objects:
+        page = obj
+        if obj_is_a_page(page):
+            page_num = get_page_number_of_DrawPage(page)
+            print(f"page '{obj.Name}'")
+            print(f"page_num '{page_num}'")
+            value    = f"{page_num}/{last_page_number}"
+            set_editable_texts_of_a_page(page, field_sheet_name, value)
+            set_editable_texts_of_a_page(page, field_drawing_numb, initial_drawing_numb)
+
+    doc.recompute()
+    Gui.SendMsgToActiveView("ViewFit")
+
+    return doc, new_page
+
+
+
+
+
+
+
+
+
+
 
 def get_page_of_DrawProjGroupItem(selected_objects):
     """
@@ -104,6 +165,21 @@ def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
         print("Please select a valid TechDraw::DrawPage.")
 
 
+
+def get_ProjGroup_number(obj):
+    """
+    Parameter:
+        obj = 'TechDraw::ProjGroup'
+    Returns 0 by default.
+    """
+    if obj.TypeId == 'TechDraw::ProjGroup':
+        try:
+            # Extract the number from the page name
+            ProjGroup_num = int(obj.Name.replace('ProjGroup', ''))
+        except ValueError:
+            pass
+    return ProjGroup_num
+
 def get_page_number_of_DrawPage(obj):
     """
     Parameter:
@@ -155,9 +231,21 @@ def decimal_to_fraction(decimal):
     fraction = Fraction(decimal).limit_denominator()
     return fraction
 
-def get_highest_page_number():
-    # Find the highest page number
-    doc = App.activeDocument()
+# def fraction_to_decimal(fraction_str):
+#     decimal = Fraction(fraction_str).real()
+#     return decimal
+
+
+def fraction_to_decimal(fraction_str):
+    # Remove spaces from the fraction string
+    fraction_str = fraction_str.replace(" ", "")
+    
+    # Now convert to Fraction and then to float
+    decimal = float(Fraction(fraction_str))
+    
+    return decimal
+
+def get_highest_page_number(doc):
     max_page_num = 0
     for obj in doc.Objects:
         # Extract the number from the page name
@@ -165,6 +253,15 @@ def get_highest_page_number():
         if page_num > max_page_num:
             max_page_num = page_num
     return max_page_num
+    
+def get_highest_ProjGroup_number(doc):
+    max_ProjGroup_num = 0
+    for obj in doc.Objects:
+        # Extract the number from the page name
+        page_num = get_page_number_of_DrawPage(obj)
+        if page_num > max_ProjGroup_num:
+            max_ProjGroup_num = page_num
+    return max_ProjGroup_num
 
 def lock_objects(selected_objects):
     # Check if at least one object is selected
@@ -180,6 +277,18 @@ def lock_objects(selected_objects):
     else:
         QtGui.QMessageBox.warning(None, "No Selection", "Please select one or more object(s) first.")
         # print("No object selected.")
+
+def get_prefered_scale(doc, alias = 'Scale', spreadsheet_name = 'Spreadsheet'):
+    # spr = App.getDocument('Maison2').getObject('Spreadsheet')
+    spr = doc.getObject(spreadsheet_name)
+    print(f'spr.Name: {spr.Name}')
+    print(f'alias: {alias}')
+    aliasValue = spr.getCellFromAlias(alias)
+    print(f'aliasValue: {aliasValue}')
+    pref_scale = spr.getContents(aliasValue).split('=')[1]
+    print(f'prefScale: {pref_scale}')
+
+    return pref_scale
 
 class myQueue(deque):
     pass

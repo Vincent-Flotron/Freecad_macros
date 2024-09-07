@@ -1,0 +1,82 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/spot/.local/share/FreeCAD/Macro/NewDrawFromBodyOrFunction.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+import FreeCADGui as Gui
+import FreeCAD    as App
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
+
+# Get the list of selected objects
+selected_objects = Gui.Selection.getSelection()
+
+# Make new draw
+doc, page = MyTools.new_techdraw_page()
+
+# Add ProjGroup to the created page
+last_ProjGroup          = MyTools.get_highest_ProjGroup_number(doc)
+new_ProjGroup_numb      = last_ProjGroup + 1
+new_ProjGroup_name      = f"ProjGroup{new_ProjGroup_numb:03}"
+new_ProjGroup           = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
+new_ProjGroup.Source    = selected_objects
+new_ProjGroup.ScaleType = 1 # Automatic
+doc                     = App.activeDocument()
+pref_scale              = MyTools.get_prefered_scale(doc)
+if pref_scale and pref_scale != 'Automatique' and pref_scale != '':
+    new_ProjGroup.ScaleType = 2 # Custom
+    pref_scale_deci         = MyTools.fraction_to_decimal(pref_scale)
+    new_ProjGroup.Scale     = pref_scale_deci
+
+
+page.addView(new_ProjGroup)
+
+new_ProjGroup.addProjection('Front')
+new_ProjGroup.Anchor.Direction = App.Vector(0.000,0.000,1.000)
+new_ProjGroup.Anchor.RotationVector = App.Vector(1.000,0.000,0.000)
+new_ProjGroup.Anchor.XDirection = App.Vector(1.000,0.000,0.000)
+new_ProjGroup.Anchor.recompute()
+doc.recompute()
+
+# Add projections to ProjGroup
+new_ProjGroup.addProjection('Left')
+# new_ProjGroup.addProjection('FrontBottomLeft')
+# new_ProjGroup.addProjection('Bottom')
+# new_ProjGroup.addProjection('FrontBottomRight')
+# new_ProjGroup.addProjection('Right')
+# new_ProjGroup.addProjection('FrontTopRight')
+new_ProjGroup.addProjection('Top')
+# new_ProjGroup.addProjection('FrontTopLeft')
+Gui.ActiveDocument.resetEdit()
+
+
+
+
+# Macro End: /home/spot/.local/share/FreeCAD/Macro/NewDrawFromBodyOrFunction.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+# # Gui.Selection.clearSelection()
+# # Gui.Selection.addSelection('Maison2','Body004')
+# # Gui.Selection.addSelection('Maison2','Body003')
+### Begin command TechDraw_ProjectionGroup
+
+# doc[new_ProjGroup_name].addObject('TechDraw::DrawProjGroup','ProjGroup003')
+# doc[new_ProjGroup_name].Page002.addView(doc[new_ProjGroup_name].ProjGroup003)
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('Front')
+# doc[new_ProjGroup_name].ProjGroup003.Anchor.Direction = FreeCAD.Vector(0.000,0.000,1.000)
+# doc[new_ProjGroup_name].ProjGroup003.Anchor.RotationVector = FreeCAD.Vector(1.000,0.000,0.000)
+# doc[new_ProjGroup_name].ProjGroup003.Anchor.XDirection = FreeCAD.Vector(1.000,0.000,0.000)
+# doc[new_ProjGroup_name].ProjGroup003.Anchor.recompute()
+# App.ActiveDocument.recompute()
+# ### End command TechDraw_ProjectionGroup
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('Left')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('FrontBottomLeft')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('Bottom')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('FrontBottomRight')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('Right')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('FrontTopRight')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('Top')
+# doc[new_ProjGroup_name].ProjGroup003.addProjection('FrontTopLeft')
+# Gui.ActiveDocument.resetEdit()
