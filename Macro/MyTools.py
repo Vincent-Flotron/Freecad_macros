@@ -6,7 +6,37 @@ from   collections import deque
 from   PySide      import QtGui
 
 
-def new_techdraw_page(techdraw_template_path="/home/spot/freecad/A4_LandscapeTD.svg"):
+# Settings
+default_techdraw_template_path = "/home/spot/freecad/A4_LandscapeTD.svg"
+param_group_name_techdraw      = "User parameter:BaseApp/Preferences/TechDraw"
+setting_key_techdraw           = "techdraw_template_path"
+
+
+class Settings:
+
+    def save_setting(param_group_name=param_group_name_techdraw, key=setting_key_techdraw, value=None):
+        """Save the given setting using FreeCAD's internal parameter system."""
+        if value is not None:
+            # Save the value under the given key in FreeCAD's settings
+            App.ParamGet(param_group_name).SetString(key, value)
+            QtGui.QMessageBox.information(None, "Save Setting", f"Setting '{key}' saved with value: {value}")
+        else:
+            QtGui.QMessageBox.warning(None, "Save Setting", f"No value provided for setting '{key}'.")
+
+    def load_setting(param_group_name=param_group_name_techdraw, key=setting_key_techdraw, default_val=None):
+        """Load the setting from FreeCAD's internal parameter system, or return the default if not found."""
+        # Retrieve the value from FreeCAD's settings, or use the default if not present
+        value = App.ParamGet(param_group_name).GetString(key, default_val)
+        return value
+
+    def edit_setting(param_group_name=param_group_name_techdraw, key=setting_key_techdraw):
+        val         = Settings.load_setting(param_group_name=param_group_name, key=key)
+        new_val, ok = QtGui.QInputDialog.getText(None, "Edit Setting", f"Actual value:\nSetting: '{key}' = '{val}'\nEnter a new Value:")
+        if ok:
+            Settings.save_setting(param_group_name=param_group_name, key=key, value=new_val)
+
+
+def new_techdraw_page(techdraw_template_path=None):
     # Create a new page number based on the last existing page
     doc = App.activeDocument()
 
@@ -26,8 +56,21 @@ def new_techdraw_page(techdraw_template_path="/home/spot/freecad/A4_LandscapeTD.
     template = doc.addObject( 'TechDraw::DrawSVGTemplate', template_name )
 
     # Assign the template to the page
-    template.Template = techdraw_template_path
+    setting_techdraw_template_path = "techdraw_template_path"
+    new_techdraw_template_path     = ""
+    if not techdraw_template_path:
+        techdraw_template_path = Settings.load_setting(default_val=setting_techdraw_template_path)
+    try:
+        template.Template = techdraw_template_path
+    except:
+        new_techdraw_template_path, ok = QtGui.QInputDialog.getText(None, "Set new path for the template", f"The actual path for the TechDraw template:\n'{techdraw_template_path}'\nis not valid.\n\nPlease, select a new path.")
+        template.Template = new_techdraw_template_path
+    
     new_page.Template = template
+
+    # Save the new TechDraw template setting
+    if new_techdraw_template_path:
+        Settings.save_setting(key=setting_techdraw_template_path, value=new_techdraw_template_path)
 
     # Recompute the document to apply changes
     doc.recompute()
@@ -241,7 +284,6 @@ def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
                     QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", f"Could not access Source or Label: {e}")
             else:
                 QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", f"Object {obj.Name} is not a TechDraw::DrawProjGroupItem.")
-                print(f"Object {obj.Name} is not a TechDraw::DrawProjGroupItem.")
     else:
         QtGui.QMessageBox.warning(None, "Error getting partname of DrawProjGroupItem", "No object selected.")
 
@@ -297,21 +339,25 @@ def lock_objects(selected_objects):
             # Check if the object has a 'Source' attribute
             if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
                 obj.LockPosition = not obj.LockPosition
-                # print(f"Object: {obj.Name}.LockPosition: {obj.LockPosition}")
             else:
                 QtGui.QMessageBox.warning(None, "Bad Selection", f"Selected object must be a TechDraw::DrawProjGroupItem.\n Actually is type: '{obj.TypeId}'")
-                # print(f"Selected object must be a TechDraw::DrawProjGroupItem")
     else:
         QtGui.QMessageBox.warning(None, "No Selection", "Please select one or more object(s) first.")
-        # print("No object selected.")
 
-def get_prefered_scale(doc, alias = 'Scale', spreadsheet_name = 'Spreadsheet'):
+
+def get_value_from_spreadsheet_alias(doc, alias = 'Scale', spreadsheet_name = 'Spreadsheet'):
     # spr = App.getDocument('Maison2').getObject('Spreadsheet')
     spr = doc.getObject(spreadsheet_name)
     aliasValue = spr.getCellFromAlias(alias)
-    pref_scale = spr.getContents(aliasValue).split('=')[1]
-
+    pref_scale = spr.getContents(aliasValue).split('=')
+    if len(pref_scale) > 1:
+        pref_scale = spr.getContents(aliasValue).split('=')[1]
+    else:
+        pref_scale = spr.getContents(aliasValue).split('=')[0]
     return pref_scale
+
+def get_prefered_scale():
+    return Settings.load_setting(key="techdraw_prefered_scale", default_val='1/10')
 
 class myQueue(deque):
     pass

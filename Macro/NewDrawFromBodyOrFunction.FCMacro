@@ -16,34 +16,39 @@ selected_objects = Gui.Selection.getSelection()
 doc, new_page = MyTools.new_techdraw_page()
 
 # Add ProjGroup to the created page
-last_ProjGroup          = MyTools.get_highest_ProjGroup_number(doc)
-new_ProjGroup_numb      = last_ProjGroup + 1
-new_ProjGroup_name      = f"ProjGroup{new_ProjGroup_numb:03}"
-new_ProjGroup           = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
+last_ProjGroup     = MyTools.get_highest_ProjGroup_number(doc)
+new_ProjGroup_numb = last_ProjGroup + 1
+new_ProjGroup_name = f"ProjGroup{new_ProjGroup_numb:03}"
+new_ProjGroup      = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
 
 # Select only Body
-sel_objs = []
-
+sel_objs    = []
+body_parent = None
 for sel_obj in selected_objects:
     if sel_obj.TypeId != 'TechDraw::Body':
-        sel_objs.append(MyTools.find_body_parent(sel_obj))
+        body_parent = MyTools.find_body_parent(sel_obj)
+        body_parent = body_parent if body_parent else sel_obj
     else:
-        sel_objs.append(sel_obj)
+        body_parent = sel_obj
+    sel_objs.append(body_parent)
 
 selected_objects     = sel_objs
 new_ProjGroup.Source = selected_objects
 
 # Set the scale
-new_ProjGroup.ScaleType = 1 # Automatic
-# doc                     = App.activeDocument()
-pref_scale              = MyTools.get_prefered_scale(doc)
+scale_type = 1 # Automatic
+pref_scale = MyTools.get_prefered_scale()
+new_scale  = None
 if pref_scale and pref_scale != 'Automatique' and pref_scale != '':
-    new_ProjGroup.ScaleType = 2 # Custom
-    pref_scale_deci         = MyTools.fraction_to_decimal(pref_scale)
-    new_ProjGroup.Scale     = pref_scale_deci
+    scale_type = 2 # Custom
+    new_scale  = MyTools.fraction_to_decimal(pref_scale)
 
 # Add ProjGroup
 new_page.addView(new_ProjGroup)
+
+# Update scale
+new_ProjGroup.ScaleType = scale_type
+new_ProjGroup.Scale     = new_scale if new_scale else new_ProjGroup.Scale
 
 # Add first projection 
 new_ProjGroup.addProjection('Front')
