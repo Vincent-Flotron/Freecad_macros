@@ -4,6 +4,10 @@
 # import FreeCAD
 # import FreeCADGui
 from PySide import QtGui
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
 import MyTools
 
 def parse_scale(scale_str):
@@ -49,13 +53,25 @@ def apply_scale():
         # Apply scale to the object
         if obj.isDerivedFrom("TechDraw::DrawProjGroupItem"):
             obj           = MyTools.get_DrawProjGroup_of_DrawProjGroupItem(selection)
-            obj.ScaleType = 2
-            obj.Scale     = scale
-        elif obj.isDerivedFrom("TechDraw::DrawProjGroup"):
-            obj.ScaleType = 2
-            obj.Scale     = scale
+            # obj.ScaleType = 2
+            # obj.Scale     = scale
+        # elif obj.isDerivedFrom("TechDraw::DrawProjGroup"):
+        obj.ScaleType = 2
+        obj.Scale     = scale
+
+        # Update cartridge scale
+        if MyTools.is_DrawProjGroup(obj):
+            page  = MyTools.get_Page_of_DrawProjGroup([obj])
+            group = selection
+        else:
+            page       = MyTools.get_page_of_DrawProjGroupItem(          selection )
+            group      = MyTools.get_DrawProjGroup_of_DrawProjGroupItem( selection )
+        MyTools.set_draw_cartridge_scale(page, group[0])
         
+        # Update
         FreeCAD.ActiveDocument.recompute()
+
+        # Display new scale
         new_scale_fractional = MyTools.decimal_to_fraction(obj.Scale)
         QtGui.QMessageBox.information(None, "Success", f"Scale set to {new_scale_fractional} ({scale})")
     else:

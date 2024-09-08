@@ -190,7 +190,7 @@ def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
         QtGui.QMessageBox.warning(None, "Error getting DrawProjGroup of a DrawProjGroupItem", "Please select a valid TechDraw::DrawProjGroupItem object.")
 
 def is_DrawProjGroup(selected_object):
-    return selected_object == 'TechDraw::DrawProjGroup'
+    return selected_object.TypeId == 'TechDraw::DrawProjGroup'
 
 def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
     """
