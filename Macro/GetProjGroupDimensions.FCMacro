@@ -1,4 +1,5 @@
 import FreeCAD as App
+import FreeCADGui as Gui
 
 def get_projgroup_dimensions_from_boundingbox(proj_group):
     x_min, y_min = float('inf'), float('inf')
@@ -11,6 +12,7 @@ def get_projgroup_dimensions_from_boundingbox(proj_group):
             print(f'view_item.TypeId: {view_item.TypeId}')
             print(f'view_item.Name: {view_item.Name}')
             print(f'view_item: {view_item}')
+            
             # Get the source object of the projection
             source_object = view_item.Source[0]
 
@@ -19,10 +21,32 @@ def get_projgroup_dimensions_from_boundingbox(proj_group):
                 bbox = source_object.ViewObject.getBoundingBox()
 
                 # Extract the bounding box extents
-                x_min = min(x_min, bbox.XMin)
-                x_max = max(x_max, bbox.XMax)
-                y_min = min(y_min, bbox.YMin)
-                y_max = max(y_max, bbox.YMax)
+                points = [
+                    App.Vector(bbox.XMin, bbox.YMin, bbox.ZMin),
+                    App.Vector(bbox.XMin, bbox.YMax, bbox.ZMin),
+                    App.Vector(bbox.XMax, bbox.YMin, bbox.ZMin),
+                    App.Vector(bbox.XMax, bbox.YMax, bbox.ZMin)
+                ]
+
+                # Get the projection direction and x direction
+                proj_dir = view_item.Direction
+                proj_xdir = view_item.XDirection
+                
+                # Compute the normal vector to determine the Y direction (perpendicular to Direction and XDirection)
+                proj_ydir = proj_dir.cross(proj_xdir).normalize()
+
+                # Transform the bounding box points according to the projection direction and x/y directions
+                transformed_points = [
+                    App.Vector(p.dot(proj_xdir), p.dot(proj_ydir), p.dot(proj_dir))
+                    for p in points
+                ]
+
+                # Find the extents in the 2D projected space
+                for p in transformed_points:
+                    x_min = min(x_min, p.x)
+                    x_max = max(x_max, p.x)
+                    y_min = min(y_min, p.y)
+                    y_max = max(y_max, p.y)
             else:
                 print(f"Skipping item: {view_item.Name}, missing ViewObject or bounding box properties.")
         
@@ -34,7 +58,7 @@ def get_projgroup_dimensions_from_boundingbox(proj_group):
         print("No valid source objects found with bounding box properties.")
         return None, None
 
-    # Calculate width and height from bounding box
+    # Calculate width and height from bounding box in projected space
     width = (x_max - x_min) * proj_group.Scale
     height = (y_max - y_min) * proj_group.Scale
     
