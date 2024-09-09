@@ -23,6 +23,14 @@ def select_body_parent_if_exist(selected_objects):
     return sel_objs
 
 
+# def get_scale(scale):
+#     new_scale  = None
+#     scale_type = 1 # Automatic
+#     if scale and scale != 'Automatique' and scale != '':
+#         scale_type = 2 # Custom
+#         new_scale  = MyTools.fraction_to_decimal(scale)
+#     return new_scale, scale_type
+
 
 # Get the list of selected objects
 selected_objects = Gui.Selection.getSelection()
@@ -41,13 +49,18 @@ new_ProjGroup      = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
 selected_objects     = select_body_parent_if_exist(selected_objects)
 new_ProjGroup.Source = selected_objects
 
+# Add third view
+new_ProjGroup_third_numb   = last_ProjGroup + 2
+new_ProjGroup_third_name   = f"ProjGroup{new_ProjGroup_third_numb:03}"
+new_ProjGroup_third        = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_third_name)
+new_ProjGroup_third.Source = selected_objects
+
 # Set the scale
-scale_type = 1 # Automatic
-pref_scale = MyTools.get_prefered_scale()
-new_scale  = None
-if pref_scale and pref_scale != 'Automatique' and pref_scale != '':
-    scale_type = 2 # Custom
-    new_scale  = MyTools.fraction_to_decimal(pref_scale)
+pref_scale, pref_scale_type              = MyTools.get_prefered_scale_deci_and_type()
+pref_scale_thirde, pref_scale_type_third = MyTools.get_prefered_scale_deci_and_type()
+
+
+new_scale, scale_type = get_scale(pref_scale)
 
 # Add ProjGroup
 new_page.addView(new_ProjGroup)

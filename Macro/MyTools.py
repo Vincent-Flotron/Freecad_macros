@@ -251,8 +251,8 @@ def rotate_projgroup(selection=None, view='FrontBottomLeft'):
             view_item.Rotation   = rotation_angle
         else:
             # If the item does not support 'Direction' or 'XDirection', skip it
-            print(f"Skipping item: {view_item.Name}, does not support 'Direction' or 'XDirection'.")
-            QtGui.QMessageBox.information(None, "Error getting DrawProjGroup of a DrawProjGroupItem", "Please select a valid TechDraw::DrawProjGroupItem object.")
+            # QtGui.QMessageBox.information(None, "Information", f"Skipping item: {view_item.Name}, does not support 'Direction' or 'XDirection'.")
+            pass
 
     # Update the document to reflect changes
     try:
@@ -425,8 +425,14 @@ def get_value_from_spreadsheet_alias(doc, alias = 'Scale', spreadsheet_name = 'S
         pref_scale = spr.getContents(aliasValue).split('=')[0]
     return pref_scale
 
-def get_prefered_scale():
-    return Settings.load_setting(key="techdraw_prefered_scale", default_val='1/10')
+def get_prefered_scale_deci_and_type(key="techdraw_prefered_scale"):
+    pref_scale = Settings.load_setting(key, default_val='1/10')
+    scale_deci = None
+    scale_type = 1 # Automatic
+    if pref_scale and pref_scale != 'Automatique' and pref_scale != '':
+        scale_type = 2 # Custom
+        scale_deci = fraction_to_decimal(pref_scale)
+    return scale_deci, scale_type
 
 class myQueue(deque):
     pass
