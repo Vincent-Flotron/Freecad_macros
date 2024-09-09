@@ -23,7 +23,7 @@ class Settings:
         else:
             QtGui.QMessageBox.warning(None, "Save Setting", f"No value provided for setting '{key}'.")
 
-    def load_setting(param_group_name=param_group_name_techdraw, key=setting_key_techdraw, default_val=None):
+    def load_setting(param_group_name=param_group_name_techdraw, key=setting_key_techdraw, default_val=''):
         """Load the setting from FreeCAD's internal parameter system, or return the default if not found."""
         # Retrieve the value from FreeCAD's settings, or use the default if not present
         value = App.ParamGet(param_group_name).GetString(key, default_val)
@@ -426,7 +426,10 @@ def get_value_from_spreadsheet_alias(doc, alias = 'Scale', spreadsheet_name = 'S
     return pref_scale
 
 def get_prefered_scale_deci_and_type(key="techdraw_prefered_scale"):
-    pref_scale = Settings.load_setting(key, default_val='1/10')
+    pref_scale = Settings.load_setting(key=key)
+    if pref_scale == '':
+        Settings.save_setting(key=key, value='1/10')
+        pref_scale = Settings.load_setting(key=key)
     scale_deci = None
     scale_type = 1 # Automatic
     if pref_scale and pref_scale != 'Automatique' and pref_scale != '':

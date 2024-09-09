@@ -23,15 +23,6 @@ def select_body_parent_if_exist(selected_objects):
     return sel_objs
 
 
-# def get_scale(scale):
-#     new_scale  = None
-#     scale_type = 1 # Automatic
-#     if scale and scale != 'Automatique' and scale != '':
-#         scale_type = 2 # Custom
-#         new_scale  = MyTools.fraction_to_decimal(scale)
-#     return new_scale, scale_type
-
-
 # Get the list of selected objects
 selected_objects = Gui.Selection.getSelection()
 
@@ -55,27 +46,37 @@ new_ProjGroup_third_name   = f"ProjGroup{new_ProjGroup_third_numb:03}"
 new_ProjGroup_third        = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_third_name)
 new_ProjGroup_third.Source = selected_objects
 
-# Set the scale
-pref_scale, pref_scale_type              = MyTools.get_prefered_scale_deci_and_type()
-pref_scale_thirde, pref_scale_type_third = MyTools.get_prefered_scale_deci_and_type()
+# Set the scales
+new_scale, scale_type                 = MyTools.get_prefered_scale_deci_and_type("techdraw_prefered_scale")
+new_scale_third, new_scale_type_third = MyTools.get_prefered_scale_deci_and_type("techdraw_prefered_scale_third_view")
 
-
-new_scale, scale_type = get_scale(pref_scale)
-
-# Add ProjGroup
+# Add ProjGroups
 new_page.addView(new_ProjGroup)
+new_page.addView(new_ProjGroup_third)
 
-# Update scale
-new_ProjGroup.ScaleType = scale_type
-new_ProjGroup.Scale     = new_scale if new_scale else new_ProjGroup.Scale
+# Update scales
+new_ProjGroup.ScaleType       = scale_type
+new_ProjGroup.Scale           = new_scale       if new_scale       else new_ProjGroup.Scale
+new_ProjGroup_third.ScaleType = new_scale_type_third
+new_ProjGroup_third.Scale     = new_scale_third if new_scale_third else new_ProjGroup_third.Scale
 
-# Add first projection 
+# Add first projections
 new_ProjGroup.addProjection('Front')
 new_ProjGroup.Anchor.Direction = App.Vector(0.000,0.000,1.000)
 new_ProjGroup.Anchor.RotationVector = App.Vector(1.000,1.000,1.000)
 new_ProjGroup.Anchor.XDirection = App.Vector(1.000,0.000,0.000)
+new_page.ViewObject.doubleClicked()
+new_ProjGroup.X = new_page.Template.Width  / 2
+new_ProjGroup.Y = new_page.Template.Height / 2
 new_ProjGroup.Anchor.recompute()
+# third view
+new_ProjGroup_third.addProjection('Front')
+MyTools.rotate_projgroup([new_ProjGroup_third])
+new_ProjGroup_third.Anchor.recompute()
+
 doc.recompute()
+
+
 
 # Add extra projections to ProjGroup
 new_ProjGroup.addProjection('Left')
@@ -86,7 +87,15 @@ new_ProjGroup.addProjection('Left')
 # new_ProjGroup.addProjection('FrontTopRight')
 new_ProjGroup.addProjection('Top')
 # new_ProjGroup.addProjection('FrontTopLeft')
+
+# # Update scales
+# new_ProjGroup.ScaleType       = scale_type
+# new_ProjGroup.Scale           = new_scale       if new_scale       else new_ProjGroup.Scale
+# new_ProjGroup_third.ScaleType = new_scale_type_third
+# new_ProjGroup_third.Scale     = new_scale_third if new_scale_third else new_ProjGroup_third.Scale
+
 Gui.ActiveDocument.resetEdit()
+
 
 # Name the draw
 MyTools.name_draw(new_page, [new_ProjGroup.Views[0]])

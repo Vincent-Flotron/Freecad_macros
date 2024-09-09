@@ -1,0 +1,56 @@
+import FreeCAD as App
+
+def get_projgroup_dimensions_from_boundingbox(proj_group):
+    x_min, y_min = float('inf'), float('inf')
+    x_max, y_max = float('-inf'), float('-inf')
+
+    # Iterate over the views in the projection group
+    print(f'proj_group.OutList: {proj_group.Views}')
+    for view_item in proj_group.Views:
+        try:
+            print(f'view_item.TypeId: {view_item.TypeId}')
+            print(f'view_item.Name: {view_item.Name}')
+            print(f'view_item: {view_item}')
+            # Get the source object of the projection
+            source_object = view_item.Source[0]
+
+            # Check if the source object has a ViewObject with a getBoundingBox method
+            if hasattr(source_object, "ViewObject"):
+                bbox = source_object.ViewObject.getBoundingBox()
+
+                # Extract the bounding box extents
+                x_min = min(x_min, bbox.XMin)
+                x_max = max(x_max, bbox.XMax)
+                y_min = min(y_min, bbox.YMin)
+                y_max = max(y_max, bbox.YMax)
+            else:
+                print(f"Skipping item: {view_item.Name}, missing ViewObject or bounding box properties.")
+        
+        except AttributeError:
+            print(f"Skipping item: {view_item.Name}, missing source properties.")
+    
+    # Check if valid bounding box was found
+    if x_min == float('inf') or y_min == float('inf'):
+        print("No valid source objects found with bounding box properties.")
+        return None, None
+
+    # Calculate width and height from bounding box
+    width = (x_max - x_min) * proj_group.Scale
+    height = (y_max - y_min) * proj_group.Scale
+    
+    return width, height
+
+# Example usage
+doc = App.ActiveDocument
+
+proj_group = Gui.Selection.getSelection()[0]
+
+if proj_group and proj_group.TypeId == 'TechDraw::DrawProjGroup':
+    width, height = get_projgroup_dimensions_from_boundingbox(proj_group)
+    if width is not None and height is not None:
+        print(f"Projection Group Width: {width}")
+        print(f"Projection Group Height: {height}")
+    else:
+        print("Could not compute dimensions. Check for valid views in the group.")
+else:
+    print("Selected object is not a TechDraw::DrawProjGroup")
