@@ -192,6 +192,75 @@ def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
 def is_DrawProjGroup(selected_object):
     return selected_object.TypeId == 'TechDraw::DrawProjGroup'
 
+# The rotate function that applies the selected view
+def rotate_projgroup(selection=None, view='FrontBottomLeft'):
+    # Define standard view directions and their corresponding XDirections
+    views = {
+        'FrontBottomLeft': {
+            'Direction': (-1, -1, 1),
+            'XDirection': (1, 0, 0)
+        },
+        'FrontBottomRight': {
+            'Direction': (1, -1, 1),
+            'XDirection': (0, 1, 0)
+        },
+        'FrontTopRight': {
+            'Direction': (1, 1, 1),
+            'XDirection': (-1, 0, 0)
+        },
+        'FrontTopLeft': {
+            'Direction': (-1, 1, 1),
+            'XDirection': (0, -1, 0)
+        }
+    }
+
+    rotation_angle = 30  #deg
+
+    # If no selection provided, get the current selection from the GUI
+    if selection is None:
+        selection = Gui.Selection.getSelection()
+
+    # Check if the selection is not empty
+    if not selection:
+        QtGui.QMessageBox.warning(None, "Selection Error", "No object selected. Please select a DrawProjGroup item.")
+        return
+
+    # Grab the first selected object
+    selected_obj = selection[0]
+
+    # Check if the selected object is of type 'TechDraw::DrawProjGroup'
+    if selected_obj.TypeId != 'TechDraw::DrawProjGroup':
+        QtGui.QMessageBox.warning(None, "Selection Error", "Selected object is not a TechDraw::DrawProjGroup.")
+        return
+
+    # Check if the specified view exists
+    if view not in views:
+        QtGui.QMessageBox.warning(None, "View Error", f"View '{view}' is not recognized. Valid views are: {list(views.keys())}")
+        return
+
+    # Set the view direction and corresponding XDirection based on the selected view
+    view_direction  = views[view]['Direction']
+    view_xdirection = views[view]['XDirection']
+
+    # Iterate through items in the projection group and set the view direction and XDirection
+    for view_item in selected_obj.OutList:
+        # Check if the view_item has the 'Direction' and 'XDirection' attributes (i.e., it's a valid projection view)
+        if hasattr(view_item, 'Direction') and hasattr(view_item, 'XDirection'):
+            view_item.Direction  = App.Vector(view_direction)
+            view_item.XDirection = App.Vector(view_xdirection)
+            view_item.Rotation   = rotation_angle
+        else:
+            # If the item does not support 'Direction' or 'XDirection', skip it
+            print(f"Skipping item: {view_item.Name}, does not support 'Direction' or 'XDirection'.")
+            QtGui.QMessageBox.information(None, "Error getting DrawProjGroup of a DrawProjGroupItem", "Please select a valid TechDraw::DrawProjGroupItem object.")
+
+    # Update the document to reflect changes
+    try:
+        App.ActiveDocument.recompute()
+        # print(f"Projection group rotated to view: {view}")
+    except Exception as e:
+        QtGui.QMessageBox.warning(None, "Error rotating ProjGroup", f"Recompute failed: {e}")
+
 def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
     """
     Parameter:

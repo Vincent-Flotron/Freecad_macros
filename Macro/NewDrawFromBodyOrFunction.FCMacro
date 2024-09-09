@@ -9,6 +9,21 @@ if mod_to_import in sys.modules:
     del sys.modules[mod_to_import]
 import MyTools
 
+# Select only Body
+def select_body_parent_if_exist(selected_objects):
+    sel_objs    = []
+    body_parent = None
+    for sel_obj in selected_objects:
+        if sel_obj.TypeId != 'TechDraw::Body':
+            body_parent = MyTools.find_body_parent(sel_obj)
+            body_parent = body_parent if body_parent else sel_obj
+        else:
+            body_parent = sel_obj
+        sel_objs.append(body_parent)
+    return sel_objs
+
+
+
 # Get the list of selected objects
 selected_objects = Gui.Selection.getSelection()
 
@@ -21,18 +36,9 @@ new_ProjGroup_numb = last_ProjGroup + 1
 new_ProjGroup_name = f"ProjGroup{new_ProjGroup_numb:03}"
 new_ProjGroup      = doc.addObject('TechDraw::DrawProjGroup',new_ProjGroup_name)
 
-# Select only Body
-sel_objs    = []
-body_parent = None
-for sel_obj in selected_objects:
-    if sel_obj.TypeId != 'TechDraw::Body':
-        body_parent = MyTools.find_body_parent(sel_obj)
-        body_parent = body_parent if body_parent else sel_obj
-    else:
-        body_parent = sel_obj
-    sel_objs.append(body_parent)
 
-selected_objects     = sel_objs
+# Select only Bodies
+selected_objects     = select_body_parent_if_exist(selected_objects)
 new_ProjGroup.Source = selected_objects
 
 # Set the scale
@@ -53,7 +59,7 @@ new_ProjGroup.Scale     = new_scale if new_scale else new_ProjGroup.Scale
 # Add first projection 
 new_ProjGroup.addProjection('Front')
 new_ProjGroup.Anchor.Direction = App.Vector(0.000,0.000,1.000)
-new_ProjGroup.Anchor.RotationVector = App.Vector(1.000,0.000,0.000)
+new_ProjGroup.Anchor.RotationVector = App.Vector(1.000,1.000,1.000)
 new_ProjGroup.Anchor.XDirection = App.Vector(1.000,0.000,0.000)
 new_ProjGroup.Anchor.recompute()
 doc.recompute()
