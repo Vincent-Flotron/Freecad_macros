@@ -1,12 +1,20 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 
+def project_to_2d(point, proj_xdir, proj_ydir, proj_dir):
+    """
+    Project a 3D point to a 2D plane defined by proj_xdir and proj_ydir.
+    """
+    x_proj = point.dot(proj_xdir)
+    y_proj = point.dot(proj_ydir)
+    return App.Vector(x_proj, y_proj, 0)
+
 def get_projgroup_dimensions_from_boundingbox(proj_group):
     x_min, y_min = float('inf'), float('inf')
     x_max, y_max = float('-inf'), float('-inf')
 
     # Iterate over the views in the projection group
-    print(f'proj_group.OutList: {proj_group.Views}')
+    print(f'proj_group.Views: {proj_group.Views}')
     for view_item in proj_group.Views:
         try:
             print(f'view_item.TypeId: {view_item.TypeId}')
@@ -20,26 +28,25 @@ def get_projgroup_dimensions_from_boundingbox(proj_group):
             if hasattr(source_object, "ViewObject"):
                 bbox = source_object.ViewObject.getBoundingBox()
 
-                # Extract the bounding box extents
+                # Extract the bounding box corners
                 points = [
                     App.Vector(bbox.XMin, bbox.YMin, bbox.ZMin),
                     App.Vector(bbox.XMin, bbox.YMax, bbox.ZMin),
                     App.Vector(bbox.XMax, bbox.YMin, bbox.ZMin),
-                    App.Vector(bbox.XMax, bbox.YMax, bbox.ZMin)
+                    App.Vector(bbox.XMax, bbox.YMax, bbox.ZMin),
+                    App.Vector(bbox.XMin, bbox.YMin, bbox.ZMax),
+                    App.Vector(bbox.XMin, bbox.YMax, bbox.ZMax),
+                    App.Vector(bbox.XMax, bbox.YMin, bbox.ZMax),
+                    App.Vector(bbox.XMax, bbox.YMax, bbox.ZMax)
                 ]
 
                 # Get the projection direction and x direction
                 proj_dir = view_item.Direction
                 proj_xdir = view_item.XDirection
-                
-                # Compute the normal vector to determine the Y direction (perpendicular to Direction and XDirection)
                 proj_ydir = proj_dir.cross(proj_xdir).normalize()
 
-                # Transform the bounding box points according to the projection direction and x/y directions
-                transformed_points = [
-                    App.Vector(p.dot(proj_xdir), p.dot(proj_ydir), p.dot(proj_dir))
-                    for p in points
-                ]
+                # Project the bounding box points to 2D
+                transformed_points = [project_to_2d(p, proj_xdir, proj_ydir, proj_dir) for p in points]
 
                 # Find the extents in the 2D projected space
                 for p in transformed_points:
