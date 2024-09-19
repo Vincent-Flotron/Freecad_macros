@@ -1,13 +1,30 @@
 import FreeCAD as App
 import FreeCADGui as Gui
+import numpy as np
 
-def project_to_2d(point, proj_xdir, proj_ydir, proj_dir):
+def create_transformation_matrix(proj_xdir, proj_ydir, proj_dir):
     """
-    Project a 3D point to a 2D plane defined by proj_xdir and proj_ydir.
+    Create a transformation matrix to project 3D points onto the 2D plane defined by proj_xdir and proj_ydir.
     """
-    x_proj = point.dot(proj_xdir)
-    y_proj = point.dot(proj_ydir)
-    return App.Vector(x_proj, y_proj, 0)
+    # Construct a 3x3 matrix with the directions as columns
+    # transformation_matrix = np.array([
+    #     [proj_xdir.x, proj_xdir.y, proj_xdir.z],
+    #     [proj_ydir.x, proj_ydir.y, proj_ydir.z],
+    #     [proj_dir.x, proj_dir.y, proj_dir.z]
+    # ])
+    transformation_matrix = np.array([
+        [proj_xdir.x, proj_xdir.y, proj_xdir.z],
+        [proj_ydir.x, proj_ydir.y, proj_ydir.z],
+        [proj_dir.x,  proj_dir.y,  proj_dir.z]
+    ])
+    return transformation_matrix
+
+def project_to_2d(point, transformation_matrix):
+    """
+    Project a 3D point to 2D space using the given transformation matrix.
+    """
+    transformed_point = transformation_matrix @ np.array([point.x, point.y, point.z])
+    return App.Vector(transformed_point[0], transformed_point[1], 0)
 
 def get_projgroup_dimensions_from_boundingbox(proj_group):
     x_min, y_min = float('inf'), float('inf')
@@ -45,8 +62,11 @@ def get_projgroup_dimensions_from_boundingbox(proj_group):
                 proj_xdir = view_item.XDirection
                 proj_ydir = proj_dir.cross(proj_xdir).normalize()
 
+                # Create transformation matrix
+                transformation_matrix = create_transformation_matrix(proj_xdir, proj_ydir, proj_dir)
+
                 # Project the bounding box points to 2D
-                transformed_points = [project_to_2d(p, proj_xdir, proj_ydir, proj_dir) for p in points]
+                transformed_points = [project_to_2d(p, transformation_matrix) for p in points]
 
                 # Find the extents in the 2D projected space
                 for p in transformed_points:
