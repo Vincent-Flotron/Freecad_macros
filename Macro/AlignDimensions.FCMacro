@@ -1,0 +1,68 @@
+import FreeCAD as App
+import FreeCADGui as Gui
+from PySide import QtGui
+
+# def show_message(text, title="Info"):
+#     msg = QtGui.QMessageBox()
+#     msg.setIcon(QtGui.QMessageBox.Information)
+#     msg.setText(text)
+#     msg.setWindowTitle(title)
+#     msg.exec_()
+
+def show_error(text, title="Error"):
+    msg = QtGui.QMessageBox()
+    msg.setIcon(QtGui.QMessageBox.Critical)
+    msg.setText(text)
+    msg.setWindowTitle(title)
+    msg.exec_()
+
+def align_techdraw_dimensions():
+    # Get the selected objects in the active document
+    selected_objs = Gui.Selection.getSelection()
+    
+    # Check if we have selected at least two objects
+    if len(selected_objs) < 2:
+        show_error("Please select at least two dimensions.")
+        return
+    
+    # Identify the first dimension's type (horizontal, vertical, or oblique)
+    first_dim = selected_objs[0]
+    
+    # Check if it's a TechDraw dimension object
+    if not hasattr(first_dim, "TypeId") or "Dimension" not in first_dim.TypeId:
+        show_error("The first selected object is not a valid dimension.")
+        return
+    
+    # Align vertical dimensions based on X coordinate (DistanceY type)
+    if first_dim.Type == "DistanceY":
+        first_x = first_dim.X
+        
+        for dim in selected_objs:
+            if dim.Type == "DistanceY":  # Vertical dimensions
+                dim.X = first_x
+                dim.recompute()  # Apply changes to the document
+
+    # Align horizontal dimensions based on Y coordinate (DistanceX type)
+    elif first_dim.Type == "DistanceX":
+        first_y = first_dim.Y
+        
+        for dim in selected_objs:
+            if dim.Type == "DistanceX":  # Horizontal dimensions
+                dim.Y = first_y
+                dim.recompute()  # Apply changes to the document
+
+    # Align oblique dimensions based on both X and Y coordinates (Distance type)
+    elif first_dim.Type == "Distance":
+        first_x = first_dim.X
+        first_y = first_dim.Y
+        
+        for dim in selected_objs:
+            if dim.Type == "Distance":  # Oblique dimensions
+                dim.X = first_x
+                dim.Y = first_y
+                dim.recompute()  # Apply changes to the document
+    else:
+        show_error("The first selected dimension is neither horizontal (DistanceX), vertical (DistanceY), nor oblique (Distance).")
+
+# Execute the function
+align_techdraw_dimensions()

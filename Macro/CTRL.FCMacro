@@ -1,0 +1,39 @@
+import FreeCAD
+import FreeCADGui
+from PySide import QtGui, QtCore
+
+class TechDrawSelector(QtGui.QDialog):
+    def __init__(self, parent=None):
+        super(TechDrawSelector, self).__init__(parent)
+        self.setWindowTitle("Select TechDraw Page")
+        self.setGeometry(100, 100, 300, 200)
+        layout = QtGui.QVBoxLayout(self)
+
+        # List existing TechDraw DrawPages
+        self.page_list = QtGui.QListWidget(self)
+        for obj in FreeCAD.ActiveDocument.Objects:
+            if obj.TypeId == "TechDraw::DrawPage":
+                self.page_list.addItem(obj.Name)
+
+        layout.addWidget(self.page_list)
+        self.setLayout(layout)
+
+        # Connect the item selection signal to a method
+        self.page_list.itemClicked.connect(self.on_item_clicked)
+
+    def on_item_clicked(self, item):
+        # Close the dialog and display the selected item's name
+        self.accept()  # Closes the dialog
+        selected_name = item.text()
+        QtGui.QMessageBox.information(self, "Selected Page", f"You selected: {selected_name}")
+
+def main():
+    # Check if Ctrl key is pressed
+    if QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier:
+        dialog = TechDrawSelector(FreeCADGui.getMainWindow())
+        dialog.exec_()
+    else:
+        QtGui.QMessageBox.warning(None, "Warning", "CTRL was not pressed")
+
+# Run the macro
+main()

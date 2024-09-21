@@ -12,7 +12,9 @@ import MyTools
 # Get the selected object
 selected_objs = Gui.Selection.getSelection()
 page          = MyTools.get_page_of_DrawProjGroupItem(     selected_objs )
+print(f"page: {page.Name}")
 part_name     = MyTools.get_partname_of_DrawProjGroupItem( selected_objs )
+print(f"part_name: {part_name}")
 
 # Name the draw using the name of the first related part
 MyTools.name_draw(page, selected_objs)

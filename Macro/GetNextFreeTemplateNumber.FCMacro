@@ -1,0 +1,16 @@
+# -*- coding: utf-8 -*-
+
+# Macro Begin: /home/wace/snap/freecad/common/FreeCAD/Macro/GetNextFreeTemplateNumber.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
+
+
+print(f"next_free_template_name: {MyTools.get_next_free_template_name(App.ActiveDocument, 'Template014')}")
+
+# Gui.runCommand('Std_DlgMacroRecord',0)
+# Gui.Selection.clearSelection()
+# Gui.Selection.addSelection('Maison2','Body046')
+# Macro End: /home/wace/snap/freecad/common/FreeCAD/Macro/GetNextFreeTemplateNumber.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

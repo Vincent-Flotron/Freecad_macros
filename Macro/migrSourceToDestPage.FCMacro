@@ -1,0 +1,38 @@
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
+from MyTools import Display
+
+
+def clone_template(doc, page_name, template_src):
+    page_split = page_name.split("Page")
+    template_name = f"Template{page_split[1]}"
+
+    new_page, _, _ = MyTools.add_new_page_with_template(doc, page_name, template_name)
+    new_template   = new_page.Template
+    src_edit_item = {}
+    for name, value in template_src.EditableTexts.items():
+        src_edit_item[name] = value
+    new_template.EditableTexts = src_edit_item
+    return new_template
+
+# Source page
+source_page = Gui.Selection.getSelection()[0]
+# Dest page
+dest_page = Gui.Selection.getSelection()[1]
+
+# Move Template from source page (Page0017) to dest page (Page0018)
+dest_page.Template = source_page.Template
+
+dest_page.Template = clone_template(App.ActiveDocument, source_page.Name, source_page.Template)
+source_page.Template = None
+# Move Views From source page (Page0017) to dest page (Page0018)
+dest_page.Views = source_page.Views
+source_page.Views = None
+
+# Clear and recompute
+Gui.Selection.clearSelection()
+App.activeDocument().recompute()
+

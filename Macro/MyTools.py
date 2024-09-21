@@ -3,13 +3,14 @@ import FreeCAD     as     App
 import FreeCADGui  as     Gui
 from   fractions   import Fraction
 from   collections import deque
-from   PySide      import QtGui
+from   PySide      import QtGui, QtCore
 
 
 # Settings
 default_techdraw_template_path = "/home/spot/freecad/A4_LandscapeTD.svg"
 param_group_name_techdraw      = "User parameter:BaseApp/Preferences/TechDraw"
 setting_key_techdraw           = "techdraw_template_path"
+last_converted_bad_temp_nb     = 0
 
 
 class Settings:
@@ -35,22 +36,28 @@ class Settings:
         if ok:
             Settings.save_setting(param_group_name=param_group_name, key=key, value=new_val)
 
+class Page:
+    def __init__(self, name, number):
+        self._name   = name
+        self._number = number
+    
+    def get_name(self):
+        return self._name
 
-def new_techdraw_page(techdraw_template_path=None):
-    # Create a new page number based on the last existing page
-    doc = App.activeDocument()
+    def get_number_int(self):
+        return self._number
+    
+    def get_number_str(self):
+        return f"{self._number:03}"
 
-    # Find the highest page number
-    max_page_num = get_highest_page_number(doc)
+def template_exist(doc, template_name):
+    for obj in doc.Objects:
+        if obj_is_template(obj) and obj.Name == template_name:
+            return True
+    return False
 
-    # Increment the page number for the new page
-    new_page_num = max_page_num + 1
-    page_nb      = f"{new_page_num:03}"
 
-    # Create new page and template names
-    page_name     = f'Page{page_nb}'
-    template_name = f'Template{page_nb}'
-
+def add_new_page_with_template(doc, page_name, template_name, techdraw_template_path=None):
     # Create a new page and template in the document
     new_page = doc.addObject( 'TechDraw::DrawPage',        page_name     )
     template = doc.addObject( 'TechDraw::DrawSVGTemplate', template_name )
@@ -67,6 +74,50 @@ def new_techdraw_page(techdraw_template_path=None):
         template.Template = new_techdraw_template_path
     
     new_page.Template = template
+
+    return new_page, new_techdraw_template_path, setting_techdraw_template_path
+
+def new_techdraw_page(techdraw_template_path=None, page=None):
+    # Create a new page number based on the last existing page
+    doc = App.activeDocument()
+
+    # Find the highest page number
+    max_page_num = get_highest_page_number(doc)
+
+    # Increment the page number for the new page
+    new_page_num = max_page_num + 1
+
+    # Make new page base on page number given or on next one
+    # Create new page and template names
+    if page == None or page_number_exist(doc, page.get_name()):
+        page_nb   = f"{new_page_num:03}"
+    else:
+        page_nb = page.get_number_str()
+
+    page_name     = f'Page{page_nb}'
+    # next_temp_nb  = get_next_free_template_name(App.ActiveDocument, f"Template{page_nb}")
+    template_name = f'Template{page_nb}'
+    if template_exist(App.ActiveDocument, template_name):
+        Display.show_message(f"Template '{template_name}' already exist in draw '{get_page_template(doc, template_name).Name}'")
+        return None, None
+
+    # Create a new page and template in the document
+    new_page, new_techdraw_template_path, setting_techdraw_template_path = add_new_page_with_template(doc, page_name, template_name, techdraw_template_path)
+    # new_page = doc.addObject( 'TechDraw::DrawPage',        page_name     )
+    # template = doc.addObject( 'TechDraw::DrawSVGTemplate', template_name )
+
+    # # Assign the template to the page
+    # setting_techdraw_template_path = "techdraw_template_path"
+    # new_techdraw_template_path     = ""
+    # if not techdraw_template_path:
+    #     techdraw_template_path = Settings.load_setting(default_val=setting_techdraw_template_path)
+    # try:
+    #     template.Template = techdraw_template_path
+    # except:
+    #     new_techdraw_template_path, ok = QtGui.QInputDialog.getText(None, "Set new path for the template", f"The actual path for the TechDraw template:\n'{techdraw_template_path}'\nis not valid.\n\nPlease, select a new path.")
+    #     template.Template = new_techdraw_template_path
+    
+    # new_page.Template = template
 
     # Save the new TechDraw template setting
     if new_techdraw_template_path:
@@ -96,6 +147,17 @@ def new_techdraw_page(techdraw_template_path=None):
 
     return doc, new_page
 
+def obj_is_template(obj):
+    if obj.TypeId == 'TechDraw::DrawSVGTemplate':
+        return True
+    else:
+        return False
+
+def get_page_template(doc, template_name):
+    template = doc.getObject(template_name)
+    for rec in template.InListRecursive:
+        if rec.TypeId == 'TechDraw::DrawPage':
+            return rec
 
 def get_page_of_DrawProjGroupItem(selected_objects):
     """
@@ -103,15 +165,13 @@ def get_page_of_DrawProjGroupItem(selected_objects):
         selected_objects = Gui.Selection.getSelection()
     """
     selected_obj = selected_objects[0] if selected_objects else None
-    parent_obj   = None
 
     if selected_obj:
         # Traverse up the hierarchy to find the parent page
         if len(selected_obj.InListRecursive) > 1:
-            parent_obj = selected_obj.InListRecursive[1]
-            
-        if parent_obj and parent_obj.TypeId == 'TechDraw::DrawPage':
-            return parent_obj
+            for rec in selected_obj.InListRecursive:
+                if rec and rec.TypeId == 'TechDraw::DrawPage':
+                    return rec
         else:
             QtGui.QMessageBox.warning(None, "Error getting Page of DrawProjGroupItem", "Parent page not found.")
     else:
@@ -391,7 +451,53 @@ def get_highest_page_number(doc):
         if page_num > max_page_num:
             max_page_num = page_num
     return max_page_num
+
+def get_template_number(name):
+    return get_number(name, "Template")
+
+def get_page_number(name):
+    return get_number(name, "Page")
+
+def get_number(name_with_number, name_without_number):
+    global last_converted_bad_temp_nb
+    template_num = name_with_number.split(name_without_number)[1]
+    if template_num == '':
+        template_num = f"{last_converted_bad_temp_nb:03}"
+        last_converted_bad_temp_nb -= 1
+    num          = int(template_num)
+    num_str      = f"{num:03}"
+    return num, num_str
+
+def get_next_free_template_name(doc, from_template_name):
+    template_lst = []
+    for obj in doc.Objects:
+        if is_template(obj):
+            template_lst.append(obj.Name)
     
+    template_lst_sorted = sorted(template_lst)
+
+    last_template_nb = 0
+    strt_nb          = get_template_number(from_template_name)[0]
+    for template in template_lst_sorted:
+        template_nb = get_template_number(template)[0]
+        if template_nb > strt_nb and template_nb > last_template_nb + 1:
+            return last_template_nb + 1
+        last_template_nb = template_nb
+    return last_template_nb + 1
+
+def is_template(obj):
+    return obj.TypeId == 'TechDraw::DrawSVGTemplate'
+
+
+def page_number_exist(doc, page_number):
+    for obj in doc.Objects:
+        # Extract the number from the page name
+        page_num = get_page_number_of_DrawPage(obj)
+        if page_num == page_number:
+            return True
+    return False
+
+
 def get_highest_ProjGroup_number(doc):
     max_ProjGroup_num = 0
     for obj in doc.Objects:
@@ -437,8 +543,89 @@ def get_prefered_scale_deci_and_type(key="techdraw_prefered_scale"):
         scale_deci = fraction_to_decimal(pref_scale)
     return scale_deci, scale_type
 
+def get_next_page_name(actual_page_name):
+    root_pg_name = "Page"
+    try:
+        pg_nb = int(actual_page_name.split(root_pg_name)[1])
+    except Exception as ex:
+        raise ex
+    next_pg_nb_int = pg_nb + 1
+    return f"{root_pg_name}{next_pg_nb_int:03}"
+
+def get_next_page_number(actual_page_name):
+    root_pg_name = "Page"
+    try:
+        pg_nb = int(actual_page_name.split(root_pg_name)[1])
+    except Exception as ex:
+        raise ex
+    
+    return pg_nb + 1
+
+def is_ctrl_pressed():
+    return QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier
+
 class myQueue(deque):
     pass
+
+class TechDrawSelector(QtGui.QDialog):
+    def __init__(self, parent=None):
+        super(TechDrawSelector, self).__init__(parent)
+        self.setWindowTitle("Select TechDraw Page")
+        self.setGeometry(100, 100, 300, 200)
+        layout = QtGui.QVBoxLayout(self)
+
+        self.next_page_name = ""
+
+        # List existing TechDraw DrawPages
+        self.page_list = QtGui.QListWidget(self)
+        for obj in App.ActiveDocument.Objects:
+            if obj.TypeId == "TechDraw::DrawPage":
+                self.page_list.addItem(obj.Name)
+
+        layout.addWidget(self.page_list)
+        self.setLayout(layout)
+
+        # Connect the item selection signal to a method
+        self.page_list.itemClicked.connect(self.on_item_clicked)
+
+
+    def on_item_clicked(self, item):
+        self.next_page_name, self.next_page_number = self._get_next_page_name_and_number(item)
+        self.accept()  # Closes the dialog
+    
+    def _get_next_page_name_and_number(self, selected_page):
+        # Close the dialog and display the selected item's name
+        self.accept()  # Closes the dialog
+        selected_name = selected_page.text()
+        QtGui.QMessageBox.information(self, "Selected Page", f"You selected: {selected_name}")
+        next_page_name   = get_next_page_name(selected_name)
+        next_page_number = get_next_page_number(selected_name)
+        doc              = App.activeDocument()
+        if page_number_exist(doc, next_page_name):
+            return None, None
+        return next_page_name, next_page_number
+
+    def get_next_name(self):
+        return self.next_page_name
+    
+    def get_next_number(self):
+        return self.next_page_number
+    
+
+class Display:
+    def show_message(text, title="Info"):
+        msg = QtGui.QMessageBox()
+        msg.setIcon(QtGui.QMessageBox.Information)
+        msg.setText(text)
+        msg.setWindowTitle(title)
+        msg.exec_()
+
+    def show_error(text, title="Error"):
+        msg = QtGui.QMessageBox()
+        msg.setIcon(QtGui.QMessageBox.Critical)
+        msg.setText(text)
+        msg.setWindowTitle(title)
+        msg.exec_()
 
 if __name__ == "__main__":
     import FreeCADGui as Gui
