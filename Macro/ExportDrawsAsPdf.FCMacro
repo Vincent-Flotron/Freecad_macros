@@ -2,6 +2,7 @@ import FreeCAD
 import TechDrawGui
 import FreeCADGui
 import os
+import subprocess
 from PyPDF2 import PdfMerger
 from PySide import QtGui, QtWidgets
 
@@ -55,12 +56,43 @@ if folder_dialog.exec_():
         if merger.pages:
             merger.write(output_pdf)
             merger.close()
-            QtGui.QMessageBox.information(None, "Export Complete", f"Selected pages exported to '{output_pdf}'")
 
             # Delete the individual PDF files after merging
             for pdf_file in pdf_files:
                 if os.path.exists(pdf_file):
                     os.remove(pdf_file)
+
+            # Ask for opening the file
+            msg_box = QtGui.QMessageBox()
+            msg_box.setIcon(QtGui.QMessageBox.Information)
+            msg_box.setText(f"Selected pages exported to '{output_pdf}'")
+            msg_box.setWindowTitle("Export Complete")
+
+            ok_button = msg_box.addButton("OK", QtGui.QMessageBox.AcceptRole)
+            open_explorer_button = msg_box.addButton("Open In File Explorer", QtGui.QMessageBox.ActionRole)
+
+            msg_box.exec_()
+
+            if msg_box.clickedButton() == open_explorer_button:
+                try:
+                    if os.name == 'nt':  # For Windows
+                        os.startfile(os.path.dirname(output_pdf))
+                    elif os.name == 'posix':  # For macOS and Linux
+                        opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                        subprocess.call([opener, os.path.dirname(output_pdf)])
+                except Exception as e:
+                    QtGui.QMessageBox.warning(None, "Error", f"Failed to open file explorer: {str(e)}")
+
+
+            # Open the final PDF with the default system PDF software
+            try:
+                if os.name == 'nt':  # For Windows
+                    os.startfile(output_pdf)
+                elif os.name == 'posix':  # For macOS and Linux
+                    opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                    subprocess.call([opener, output_pdf])
+            except Exception as e:
+                QtGui.QMessageBox.warning(None, "Error", f"Failed to open the PDF: {str(e)}")
         else:
             QtGui.QMessageBox.warning(None, "No Pages Selected", "No TechDraw pages were selected for export.")
     else:
