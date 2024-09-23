@@ -3,7 +3,7 @@ import TechDrawGui
 import FreeCADGui
 import os
 from PyPDF2 import PdfMerger
-from PySide import QtGui
+from PySide import QtGui, QtWidgets
 
 # Get the active document and the selection
 doc = FreeCAD.ActiveDocument
@@ -24,38 +24,44 @@ folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly)
 if folder_dialog.exec_():
     root = folder_dialog.selectedFiles()[0] + "/"
     
-    # List to store PDF file paths for deletion later
-    pdf_files = []
+    # Ask for the name of the output PDF file
+    output_pdf_name, ok = QtWidgets.QInputDialog.getText(
+        None, "Output PDF Name", "Enter the name for the output PDF (without extension):", QtWidgets.QLineEdit.Normal, "selected_pages_output"
+    )
+    
+    if ok and output_pdf_name:
+        output_pdf = os.path.join(root, f"{output_pdf_name}.pdf")
+        
+        # List to store PDF file paths for deletion later
+        pdf_files = []
 
-    for obj in selection:
-        # Check if the object is a TechDraw page
-        if obj.TypeId == "TechDraw::DrawPage":
-            filename = f"{root}{obj.Name}.pdf"
-            
-            # Check if the file exists and delete it
-            if os.path.exists(filename):
-                os.remove(filename)
-                FreeCAD.Console.PrintMessage(f"Deleted existing file: {filename}\n")
-            
-            # Export the TechDraw page as PDF
-            TechDrawGui.exportPageAsPdf(obj, filename)
-            FreeCAD.Console.PrintMessage(f"Exported PDF: {filename}\n")
-            
-            # Add the pdf to the merger and keep track of the filename
-            merger.append(filename)
-            pdf_files.append(filename)
+        for obj in selection:
+            # Check if the object is a TechDraw page
+            if obj.TypeId == "TechDraw::DrawPage":
+                filename = f"{root}{obj.Name}.pdf"
+                
+                # Check if the file exists and delete it
+                if os.path.exists(filename):
+                    os.remove(filename)
+                
+                # Export the TechDraw page as PDF
+                TechDrawGui.exportPageAsPdf(obj, filename)
+                
+                # Add the pdf to the merger and keep track of the filename
+                merger.append(filename)
+                pdf_files.append(filename)
 
-# Write the output PDF if there are pages
-if merger.pages:
-    output_pdf = os.path.join(root, "selected_pages_output.pdf")
-    merger.write(output_pdf)
-    merger.close()
-    print(f"Selected pages exported to '{output_pdf}'\n")
+        # Write the output PDF if there are pages
+        if merger.pages:
+            merger.write(output_pdf)
+            merger.close()
+            QtGui.QMessageBox.information(None, "Export Complete", f"Selected pages exported to '{output_pdf}'")
 
-    # Delete the individual PDF files after merging
-    for pdf_file in pdf_files:
-        if os.path.exists(pdf_file):
-            os.remove(pdf_file)
-            FreeCAD.Console.PrintMessage(f"Deleted temporary PDF file: {pdf_file}\n")
-else:
-    print("No TechDraw pages were selected for export.\n")
+            # Delete the individual PDF files after merging
+            for pdf_file in pdf_files:
+                if os.path.exists(pdf_file):
+                    os.remove(pdf_file)
+        else:
+            QtGui.QMessageBox.warning(None, "No Pages Selected", "No TechDraw pages were selected for export.")
+    else:
+        QtGui.QMessageBox.warning(None, "Invalid Name", "No valid name was provided for the output PDF.")
