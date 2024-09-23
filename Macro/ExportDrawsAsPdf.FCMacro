@@ -24,7 +24,9 @@ folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly)
 if folder_dialog.exec_():
     root = folder_dialog.selectedFiles()[0] + "/"
     
-    # Create or open the text file to store PDF file paths
+    # List to store PDF file paths for deletion later
+    pdf_files = []
+
     for obj in selection:
         # Check if the object is a TechDraw page
         if obj.TypeId == "TechDraw::DrawPage":
@@ -39,8 +41,9 @@ if folder_dialog.exec_():
             TechDrawGui.exportPageAsPdf(obj, filename)
             FreeCAD.Console.PrintMessage(f"Exported PDF: {filename}\n")
             
-            # Add the pdf to the merger
+            # Add the pdf to the merger and keep track of the filename
             merger.append(filename)
+            pdf_files.append(filename)
 
 # Write the output PDF if there are pages
 if merger.pages:
@@ -48,5 +51,11 @@ if merger.pages:
     merger.write(output_pdf)
     merger.close()
     print(f"Selected pages exported to '{output_pdf}'\n")
+
+    # Delete the individual PDF files after merging
+    for pdf_file in pdf_files:
+        if os.path.exists(pdf_file):
+            os.remove(pdf_file)
+            FreeCAD.Console.PrintMessage(f"Deleted temporary PDF file: {pdf_file}\n")
 else:
     print("No TechDraw pages were selected for export.\n")
