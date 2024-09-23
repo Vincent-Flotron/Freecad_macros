@@ -1,0 +1,5 @@
+import sys
+print(sys.executable)
+from PyPDF2 import PdfMerger
+
+"""See Freecad's Python path"""

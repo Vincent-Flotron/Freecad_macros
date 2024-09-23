@@ -1,0 +1,52 @@
+import FreeCAD
+import TechDrawGui
+import FreeCADGui
+import os
+from PyPDF2 import PdfMerger
+from PySide import QtGui
+
+# Get the active document and the selection
+doc = FreeCAD.ActiveDocument
+selection = FreeCADGui.Selection.getSelection()
+
+# Get the directory of the current macro
+macro_directory = os.path.dirname(os.path.abspath(__file__))
+
+# Initialize PdfMerger
+merger = PdfMerger()
+
+# Ask user for the folder to save the PDFs
+folder_dialog = QtGui.QFileDialog()
+folder_dialog.setFileMode(QtGui.QFileDialog.Directory)
+folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly)
+
+# If user selects a folder, proceed with PDF export
+if folder_dialog.exec_():
+    root = folder_dialog.selectedFiles()[0] + "/"
+    
+    # Create or open the text file to store PDF file paths
+    for obj in selection:
+        # Check if the object is a TechDraw page
+        if obj.TypeId == "TechDraw::DrawPage":
+            filename = f"{root}{obj.Name}.pdf"
+            
+            # Check if the file exists and delete it
+            if os.path.exists(filename):
+                os.remove(filename)
+                FreeCAD.Console.PrintMessage(f"Deleted existing file: {filename}\n")
+            
+            # Export the TechDraw page as PDF
+            TechDrawGui.exportPageAsPdf(obj, filename)
+            FreeCAD.Console.PrintMessage(f"Exported PDF: {filename}\n")
+            
+            # Add the pdf to the merger
+            merger.append(filename)
+
+# Write the output PDF if there are pages
+if merger.pages:
+    output_pdf = os.path.join(root, "selected_pages_output.pdf")
+    merger.write(output_pdf)
+    merger.close()
+    print(f"Selected pages exported to '{output_pdf}'\n")
+else:
+    print("No TechDraw pages were selected for export.\n")
