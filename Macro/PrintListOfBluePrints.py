@@ -16,6 +16,27 @@ if mod_to_import in sys.modules:
 import MyTools
 import re
 
+last_page_number = -1
+cartridge_data = [
+    ['Designed By:', 'Wace'],
+    ['Name', 'Liste des Plans'],
+    ['Date:', '19.09.2024'],
+    ['Size', 'A4'],
+    ['Made with:', 'FreeCAD'],
+    ['Version number:', 'V1']
+]
+
+cartridge_style = [
+    ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+    ('FONTSIZE', (0, 0), (-1, -1), 10),
+    ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+    ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
+    ('TOPPADDING', (0, 0), (-1, -1), 6),
+    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+]
+
 def create_plan_list_pdf():
     # Get all TechDraw pages
     doc   = App.ActiveDocument
@@ -55,19 +76,20 @@ def create_plan_list_pdf():
     # Create table
     table = Table(table_data)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 12),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),      # Header background
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke), # Header text color
+        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),               # Align first column (index 0) to the right
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),                # Align second column (index 1) to the left
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),   # Header font
+        ('FONTSIZE', (0, 0), (-1, 0), 14),                 # Header font size
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),            # Padding for header
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),    # Background for rows
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),     # Text color for rows
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),       # Font for rows
+        ('FONTSIZE', (0, 1), (-1, -1), 12),                # Font size for rows
+        ('TOPPADDING', (0, 1), (-1, -1), 6),               # Padding for rows
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),            # Padding for rows
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)        # Grid for the entire table
     ]))
 
     elements.append(table)
@@ -108,33 +130,11 @@ def add_cartridge_table(pdf_path):
     temp_pdf_path = os.path.splitext(pdf_path)[0] + "_temp.pdf"
     c = canvas.Canvas(temp_pdf_path, pagesize=A4)
 
-    # Cartridge table data
-    last_page = MyTools.get_highest_page_number(App.ActiveDocument) + 1
-    cartridge_data = [
-        ['Designed By:', 'Wace'],
-        ['Name', 'Liste des Plans'],
-        ['Date:', '19.09.2024'],
-        ['Size', 'A4'],
-        ['Made with:', 'FreeCAD'],
-        ['Version number:', 'V1'],
-        ['Sheet:', f'{last_page} / {last_page}']
-    ]
-
     # Create the table object
     table = Table(cartridge_data, colWidths=[150, 350])
 
     # Define table style
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
+    table.setStyle(TableStyle(cartridge_style))
 
     # Set the table position on the canvas
     table.wrapOn(c, A4[0], A4[1])
@@ -172,6 +172,7 @@ def add_page_numbers(pdf_path):
     reader = PdfReader(pdf_path)
     writer = PdfWriter()
     total_pages = len(reader.pages)
+    page_offset = MyTools.get_highest_page_number(App.ActiveDocument) + 1
 
     for i, page in enumerate(reader.pages):
         packet = io.BytesIO()
@@ -180,7 +181,7 @@ def add_page_numbers(pdf_path):
         
         # Calculate the center of the page
         page_width, page_height = A4
-        text = f"Page {i + 1}/{total_pages}"
+        text = f"Page {page_offset + i}/{page_offset + total_pages - 1}"
         text_width = can.stringWidth(text, "Helvetica", 10)
         x = (page_width - text_width) / 2
 
@@ -200,32 +201,11 @@ def add_cartridge_page(pdf_path):
     # Create a new PDF for the cartridge
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
-    # Cartridge table data
-    cartridge_data = [
-        ['Designed By:', 'Wace'],
-        ['Name', 'Liste des Plans'],
-        ['Date:', '19.09.2024'],
-        ['Size', 'A4'],
-        ['Made with FreeCAD', ''],
-        ['Version number:', 'V1'],
-        ['Sheet:', '1 / 60']
-    ]
-
     # Create the table object
     table = Table(cartridge_data, colWidths=[150, 350])
 
     # Define table style
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
+    table.setStyle(TableStyle(cartridge_style))
 
     # Set the table position on the canvas
     table.wrapOn(c, A4[0], A4[1])
