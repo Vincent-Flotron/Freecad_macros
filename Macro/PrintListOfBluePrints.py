@@ -1,11 +1,16 @@
 import FreeCAD as App
-# import TechDraw
 from PySide import QtGui, QtCore
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 import os
+import sys
+
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
 
 def create_plan_list_pdf():
     # Get all TechDraw pages
@@ -48,42 +53,147 @@ def create_plan_list_pdf():
 
     elements.append(table)
 
-    # Build PDF with the custom cartridge function
-    pdf_doc.build(elements, onFirstPage=add_cartridge)
+    # Build PDF
+    pdf_doc.build(elements)
+
+    # Check if there's enough space on the last page for the cartridge
+    if has_enough_space_for_cartridge(pdf_path):
+        add_cartridge_table(pdf_path)
+    else:
+        add_cartridge_page(pdf_path)
 
     QtGui.QMessageBox.information(None, "PDF Created", f"The PDF has been created at:\n{pdf_path}")
 
-def add_cartridge(canvas, doc):
-    canvas.saveState()
-    canvas.setFont('Helvetica-Bold', 12)
+    # Open the PDF file with the default PDF viewer
+    QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(pdf_path))
+    MyTools.open_file_browser(pdf_path)
 
-    # Draw cartridge
-    canvas.rect(50, 50, 500, 150)
+def has_enough_space_for_cartridge(pdf_path):
+    # Simulate checking the last page of the PDF
+    from PyPDF2 import PdfReader
 
-    # Add cartridge content
-    data = [
-        ['Designed By:', 'Escalier Cergnat'],
-        ['Wace', 'Liste des Plans'],
-        ['Date:', 'Size:'],
-        ['19.09.2024', 'A4'],
+    with open(pdf_path, 'rb') as f:
+        reader = PdfReader(f)
+        last_page = reader.pages[-1]
+        page_height = last_page.mediabox.height
+
+        # Assume cartridge height is 150 units (you can adjust this)
+        cartridge_height = 150
+
+        # Check if there is enough space at the bottom of the page
+        return (page_height > cartridge_height + 100)  # Adjust 100 for padding space
+
+def add_cartridge_table(pdf_path):
+    from PyPDF2 import PdfReader, PdfWriter
+    from reportlab.pdfgen import canvas
+
+    # Create a temporary PDF with the cartridge
+    temp_pdf_path = os.path.splitext(pdf_path)[0] + "_temp.pdf"
+    c = canvas.Canvas(temp_pdf_path, pagesize=A4)
+
+    # Cartridge table data
+    cartridge_data = [
+        ['Designed By:', 'Wace'],
+        ['Name', 'Liste des Plans'],
+        ['Date:', '19.09.2024'],
+        ['Size', 'A4'],
         ['Made with FreeCAD', ''],
-        ['Version number:', 'Sheet:'],
-        ['V1', '1 / 60']
+        ['Version number:', 'V1'],
+        ['Sheet:', '1 / 60']
     ]
 
-    x, y = 60, 180
-    for row in data:
-        canvas.drawString(x, y, row[0])
-        canvas.drawString(x + 250, y, row[1])
-        y -= 20
+    # Create the table object
+    table = Table(cartridge_data, colWidths=[150, 350])
 
-    # Add horizontal lines
-    for i in range(1, 7):
-        canvas.line(50, 50 + i * 30, 550, 50 + i * 30)
+    # Define table style
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
 
-    # Add vertical line
-    canvas.line(300, 50, 300, 200)
+    # Set the table position on the canvas
+    table.wrapOn(c, A4[0], A4[1])
+    table.drawOn(c, 50, 50)  # Position at the bottom-left corner of the page
 
-    canvas.restoreState()
+    c.showPage()
+    c.save()
+
+    # Combine original PDF and the cartridge PDF
+    merge_pdfs(pdf_path, temp_pdf_path)
+
+    # Clean up the temporary PDF
+    os.remove(temp_pdf_path)
+
+def merge_pdfs(original_pdf_path, cartridge_pdf_path):
+    from PyPDF2 import PdfReader, PdfWriter
+
+    writer = PdfWriter()
+
+    # Add the original PDF pages
+    with open(original_pdf_path, 'rb') as original:
+        original_reader = PdfReader(original)
+        for page in original_reader.pages:
+            writer.add_page(page)
+
+    # Add the cartridge page
+    with open(cartridge_pdf_path, 'rb') as cartridge:
+        cartridge_reader = PdfReader(cartridge)
+        for page in cartridge_reader.pages:
+            writer.add_page(page)
+
+    # Save the new PDF with the cartridge added
+    with open(original_pdf_path, 'wb') as out_file:
+        writer.write(out_file)
+
+def add_cartridge_page(pdf_path):
+    from PyPDF2 import PdfReader, PdfWriter
+    from reportlab.pdfgen import canvas
+
+    # Create a new PDF for the cartridge
+    c = canvas.Canvas(pdf_path, pagesize=A4)
+
+    # Cartridge table data
+    cartridge_data = [
+        ['Designed By:', 'Wace'],
+        ['Name', 'Liste des Plans'],
+        ['Date:', '19.09.2024'],
+        ['Size', 'A4'],
+        ['Made with FreeCAD', ''],
+        ['Version number:', 'V1'],
+        ['Sheet:', '1 / 60']
+    ]
+
+    # Create the table object
+    table = Table(cartridge_data, colWidths=[150, 350])
+
+    # Define table style
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+
+    # Set the table position on the canvas
+    table.wrapOn(c, A4[0], A4[1])
+    table.drawOn(c, 50, 50)  # Position at the bottom-left corner of the page
+
+    c.showPage()
+    c.save()
+
+    # Open the original PDF to merge
+    merge_pdfs(pdf_path, pdf_path)
 
 create_plan_list_pdf()
