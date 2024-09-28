@@ -147,7 +147,7 @@ def new_techdraw_page(techdraw_template_path=None, page=None):
 
     # Update all page numbers
     field_sheet_name     = 'FC-SH'
-    last_page_number     = new_page_num
+    last_page_number     = new_page_num + 1
     field_drawing_numb   = "Drawing_number"
     initial_drawing_numb = "V1"
     # doc                  = App.activeDocument()

@@ -14,14 +14,30 @@ mod_to_import = 'MyTools'
 if mod_to_import in sys.modules:
     del sys.modules[mod_to_import]
 import MyTools
+import re
 
 def create_plan_list_pdf():
     # Get all TechDraw pages
-    doc = App.ActiveDocument
-    pages = [obj for obj in doc.Objects if obj.TypeId == 'TechDraw::DrawPage']
+    doc   = App.ActiveDocument
+    pages = [obj for obj in doc.Objects if MyTools.obj_is_a_page(obj)]
 
     # Extract Label and Label2 from pages and sort by Label
-    page_data = sorted([(page.Label, getattr(page, 'Label2', '')) for page in pages], key=lambda x: x[0])
+    frst_col_name = 'Label'
+    seco_col_name = 'Label2'
+    col_from_name = {frst_col_name: 0,
+                     seco_col_name: 1}
+    page_data = sorted([[page.Label, getattr(page, seco_col_name, '')] for page in pages], key=lambda x: x[col_from_name[seco_col_name]])
+    pattern = re.compile(r'Page(\d+)')
+    # Iterate over the pages and extract the page number
+    pages_col = col_from_name[frst_col_name]
+    for i in range(len(page_data)):
+        match = pattern.search(page_data[i][pages_col])
+        # Set page number to first column
+        if match:
+            page_data[i][pages_col] = int(match.group(1))
+        else:
+            page_data[i][pages_col] = 0  # Handle the case where the pattern does not match
+
 
     # Create PDF
     pdf_path = os.path.join(QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation), "Liste des Plans.pdf")
@@ -34,7 +50,7 @@ def create_plan_list_pdf():
     elements.append(Paragraph("Liste des Plans", styles['Title']))
 
     # Create table data
-    table_data = [['Label', 'Label2']] + page_data
+    table_data = [['Page', 'Dessin']] + page_data
 
     # Create table
     table = Table(table_data)
@@ -93,6 +109,7 @@ def add_cartridge_table(pdf_path):
     c = canvas.Canvas(temp_pdf_path, pagesize=A4)
 
     # Cartridge table data
+    last_page = MyTools.get_highest_page_number(App.ActiveDocument) + 1
     cartridge_data = [
         ['Designed By:', 'Wace'],
         ['Name', 'Liste des Plans'],
@@ -100,7 +117,7 @@ def add_cartridge_table(pdf_path):
         ['Size', 'A4'],
         ['Made with:', 'FreeCAD'],
         ['Version number:', 'V1'],
-        ['Sheet:', '1 / 60']
+        ['Sheet:', f'{last_page} / {last_page}']
     ]
 
     # Create the table object
