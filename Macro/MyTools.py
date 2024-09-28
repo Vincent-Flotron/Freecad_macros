@@ -4,6 +4,9 @@ import FreeCADGui  as     Gui
 from   fractions   import Fraction
 from   collections import deque
 from   PySide      import QtGui, QtCore
+import platform
+import os
+import subprocess
 
 
 # Settings
@@ -56,6 +59,20 @@ def template_exist(doc, template_name):
             return True
     return False
 
+
+def ask_with_freecad_gui_qt(title, text, set_value=""):
+    # Create a dialog box
+    dialog = QtGui.QInputDialog()
+    dialog.setWindowTitle(title)
+    dialog.setLabelText(text)
+    dialog.setTextValue("")
+
+    # Show the dialog and wait for user input
+    if dialog.exec_():
+        return dialog.textValue()
+    else:
+        return None
+    
 
 def add_new_page_with_template(doc, page_name, template_name, techdraw_template_path=None):
     # Create a new page and template in the document
@@ -321,6 +338,22 @@ def rotate_projgroup(selection=None, view='FrontBottomLeft'):
     except Exception as e:
         QtGui.QMessageBox.warning(None, "Error rotating ProjGroup", f"Recompute failed: {e}")
 
+
+def open_file_browser(script_path):
+    """Open the folder containing the generated script using the default file browser."""
+    folder_path = os.path.dirname(script_path)
+
+    # Detect the platform and open the folder accordingly
+    if platform.system() == 'Linux':
+        subprocess.run(['xdg-open', folder_path])
+    elif platform.system() == 'Darwin':  # macOS
+        subprocess.run(['open', folder_path])
+    elif platform.system() == 'Windows':
+        subprocess.run(['explorer', folder_path])
+    else:
+        QtWidgets.QMessageBox.warning(None, "Unsupported OS", "Unable to open the folder automatically on this operating system.")
+
+
 def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
     """
     Parameter:
@@ -353,6 +386,39 @@ def set_editable_texts_of_a_page(selected_obj, editable_text_name, value):
     else:
         QtGui.QMessageBox.warning(None, "Error setting editable text of a page", "Please select a valid TechDraw::DrawPage.")
 
+
+def get_editable_text_of_a_page(selected_obj, editable_text_name):
+    """
+    Get the value of a specific editable text field from a TechDraw page.
+
+    Parameters:
+        selected_obj (object): A 'TechDraw::DrawPage' object
+        editable_text_name (str): Name of the editable text field (e.g., "Subtitle")
+
+    Returns:
+        str: The value of the specified editable text field, or None if not found
+    """
+    if selected_obj and selected_obj.TypeId == 'TechDraw::DrawPage':
+        # Access the template associated with the selected page
+        template = selected_obj.Template
+
+        if template:
+            # Access the editable text fields of the template
+            editable_texts = template.EditableTexts
+            
+            # Check if editable_text_name exists in the editable fields
+            if editable_text_name in editable_texts:
+                # Return the value of the specified editable text field
+                return editable_texts[editable_text_name]
+            else:
+                QtGui.QMessageBox.warning(None, "Error getting editable text of a page", f"{editable_text_name} field not found in the template.")
+                return None
+        else:
+            QtGui.QMessageBox.warning(None, "Error getting editable text of a page", "No template assigned to the selected page.")
+            return None
+    else:
+        QtGui.QMessageBox.warning(None, "Error getting editable text of a page", "Please select a valid TechDraw::DrawPage.")
+        return None
 
 
 def get_ProjGroup_number(obj):

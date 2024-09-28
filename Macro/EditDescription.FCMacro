@@ -1,0 +1,17 @@
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
+
+
+# Get the current selection
+selection = Gui.Selection.getSelection()
+
+# Ask the user for a new description
+new_description = MyTools.ask_with_freecad_gui_qt(title="Enter Description", text="Please enter a new description:")
+
+# If the user provided a description, update the Label2 property of each selected object
+if new_description:
+    for obj in selection:
+        obj.Label2 = new_description
