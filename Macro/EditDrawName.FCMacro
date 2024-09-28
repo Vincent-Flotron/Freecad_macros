@@ -1,0 +1,50 @@
+import FreeCAD
+import FreeCADGui
+from PySide import QtGui
+import sys
+mod_to_import = 'MyTools'
+if mod_to_import in sys.modules:
+    del sys.modules[mod_to_import]
+import MyTools
+
+
+def edit_template_subtitle():
+    """
+    Macro to edit the 'Subtitle' field of a selected TechDraw template.
+    """
+
+    # Get the currently selected objects
+    selected_objects = FreeCADGui.Selection.getSelection()
+
+    if not selected_objects:
+        QtGui.QMessageBox.warning(None, "Selection Error", "No object selected. Please select a TechDraw page.")
+        return
+
+    for obj in selected_objects:
+        # Check if the selected object is a TechDraw template (TechDraw::DrawPageTemplate)
+        if MyTools.obj_is_a_page(obj):
+            # Get the current value of the 'Subtitle' field
+            current_subtitle = MyTools.get_editable_text_of_a_page(obj, 'Subtitle')
+            
+            # Prompt the user to enter a new subtitle with the current subtitle as default text
+            new_subtitle, ok = QtGui.QInputDialog.getText(None, "Edit Subtitle", 
+                "Enter new subtitle:", QtGui.QLineEdit.Normal, current_subtitle)
+
+            if ok and new_subtitle:
+                # Update the 'Subtitle' field with the new value
+                MyTools.set_editable_texts_of_a_page(obj, 'Subtitle', new_subtitle)
+                
+                # Mark the object as modified and recompute the document
+                obj.touch()
+                FreeCAD.ActiveDocument.recompute()
+                
+                # Notify the user of success
+                QtGui.QMessageBox.information(None, "Success", "Subtitle updated successfully.")
+            else:
+                QtGui.QMessageBox.information(None, "Cancelled", "Operation cancelled. Subtitle not changed.")
+
+        else:
+            QtGui.QMessageBox.warning(None, "Selection Error", f"The selected object '{obj.Label}' is not a TechDraw page.")
+
+# Run the function
+edit_template_subtitle()
