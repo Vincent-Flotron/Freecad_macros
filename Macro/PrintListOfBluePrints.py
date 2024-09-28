@@ -1,11 +1,14 @@
 import FreeCAD as App
 from PySide import QtGui, QtCore
-from reportlab.lib import colors
+from reportlab.lib           import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus      import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib.styles    import getSampleStyleSheet
+from reportlab.pdfgen        import canvas
 import os
 import sys
+from PyPDF2 import PdfReader, PdfWriter
+import io
 
 mod_to_import = 'MyTools'
 if mod_to_import in sys.modules:
@@ -38,7 +41,7 @@ def create_plan_list_pdf():
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 14),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
@@ -62,6 +65,9 @@ def create_plan_list_pdf():
     else:
         add_cartridge_page(pdf_path)
 
+    # Add page numbers
+    add_page_numbers(pdf_path)
+
     QtGui.QMessageBox.information(None, "PDF Created", f"The PDF has been created at:\n{pdf_path}")
 
     # Open the PDF file with the default PDF viewer
@@ -70,8 +76,6 @@ def create_plan_list_pdf():
 
 def has_enough_space_for_cartridge(pdf_path):
     # Simulate checking the last page of the PDF
-    from PyPDF2 import PdfReader
-
     with open(pdf_path, 'rb') as f:
         reader = PdfReader(f)
         last_page = reader.pages[-1]
@@ -84,9 +88,6 @@ def has_enough_space_for_cartridge(pdf_path):
         return (page_height > cartridge_height + 100)  # Adjust 100 for padding space
 
 def add_cartridge_table(pdf_path):
-    from PyPDF2 import PdfReader, PdfWriter
-    from reportlab.pdfgen import canvas
-
     # Create a temporary PDF with the cartridge
     temp_pdf_path = os.path.splitext(pdf_path)[0] + "_temp.pdf"
     c = canvas.Canvas(temp_pdf_path, pagesize=A4)
@@ -97,7 +98,7 @@ def add_cartridge_table(pdf_path):
         ['Name', 'Liste des Plans'],
         ['Date:', '19.09.2024'],
         ['Size', 'A4'],
-        ['Made with FreeCAD', ''],
+        ['Made with:', 'FreeCAD'],
         ['Version number:', 'V1'],
         ['Sheet:', '1 / 60']
     ]
@@ -132,8 +133,6 @@ def add_cartridge_table(pdf_path):
     os.remove(temp_pdf_path)
 
 def merge_pdfs(original_pdf_path, cartridge_pdf_path):
-    from PyPDF2 import PdfReader, PdfWriter
-
     writer = PdfWriter()
 
     # Add the original PDF pages
@@ -152,10 +151,35 @@ def merge_pdfs(original_pdf_path, cartridge_pdf_path):
     with open(original_pdf_path, 'wb') as out_file:
         writer.write(out_file)
 
-def add_cartridge_page(pdf_path):
-    from PyPDF2 import PdfReader, PdfWriter
-    from reportlab.pdfgen import canvas
+def add_page_numbers(pdf_path):
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    total_pages = len(reader.pages)
 
+    for i, page in enumerate(reader.pages):
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet, pagesize=A4)
+        can.setFont("Helvetica", 10)
+        
+        # Calculate the center of the page
+        page_width, page_height = A4
+        text = f"Page {i + 1}/{total_pages}"
+        text_width = can.stringWidth(text, "Helvetica", 10)
+        x = (page_width - text_width) / 2
+
+        # Draw the centered text
+        can.drawString(x, 20, text)
+        can.save()
+
+        packet.seek(0)
+        new_page = PdfReader(packet).pages[0]
+        page.merge_page(new_page)
+        writer.add_page(page)
+
+    with open(pdf_path, 'wb') as output_file:
+        writer.write(output_file)
+
+def add_cartridge_page(pdf_path):
     # Create a new PDF for the cartridge
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
