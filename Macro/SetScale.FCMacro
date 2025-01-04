@@ -36,8 +36,8 @@ def apply_scale():
     obj = selection[0]
     
     # Check if the selected object is of the correct type
-    if not (obj.isDerivedFrom("TechDraw::DrawProjGroupItem") or obj.isDerivedFrom("TechDraw::DrawProjGroup")):
-        QtGui.QMessageBox.warning(None, "Warning", "Selected object must be a TechDraw::DrawProjGroupItem or TechDraw::DrawProjGroup.")
+    if not (obj.isDerivedFrom("TechDraw::DrawProjGroupItem") or obj.isDerivedFrom("TechDraw::DrawProjGroup") or obj.isDerivedFrom("TechDraw::DrawViewDetail")):
+        QtGui.QMessageBox.warning(None, "Warning", "Selected object must be a TechDraw::DrawProjGroupItem or TechDraw::DrawProjGroup or TechDraw::DrawViewDetail.")
         return
     
     # Ask for scale
@@ -66,7 +66,10 @@ def apply_scale():
         else:
             page       = MyTools.get_page_of_DrawProjGroupItem(          selection )
             group      = MyTools.get_DrawProjGroup_of_DrawProjGroupItem( selection )
-        MyTools.set_draw_cartridge_scale(page, group[0])
+        if page and len(group) > 0:
+            MyTools.set_draw_cartridge_scale(page, group[0])
+        else:
+            QtGui.QMessageBox.information(None, "Page's scale not set", f"Page's scale not set because page not found from selected '{obj.TypeId}'")
         
         # Update
         FreeCAD.ActiveDocument.recompute()

@@ -269,6 +269,9 @@ def get_DrawProjGroup_of_DrawProjGroupItem(selected_objects):
 def is_DrawProjGroup(selected_object):
     return selected_object.TypeId == 'TechDraw::DrawProjGroup'
 
+def is_DrawProjGroupItem(selected_object):
+    return selected_object.TypeId == 'TechDraw::DrawProjGroupItem'
+
 # The rotate function that applies the selected view
 def rotate_projgroup(selection=None, view='FrontBottomLeft'):
     # Define standard view directions and their corresponding XDirections
@@ -453,6 +456,22 @@ def get_page_number_of_DrawPage(obj):
 def obj_is_a_page(obj):
     return obj.TypeId == 'TechDraw::DrawPage'
 
+
+def set_label2_from_draw_subtitle():
+    doc = App.ActiveDocument
+    
+    for obj in doc.Objects:
+        if obj_is_a_page(obj):
+            subtitle = get_editable_text_of_a_page(obj, "Subtitle")
+            obj.Label2 = subtitle
+    
+    doc.recompute()
+
+def toggle_hidden_edges(proj_group_item):
+    if is_DrawProjGroupItem(proj_group_item):
+        proj_group_item.HardHidden = not proj_group_item.HardHidden
+
+
 def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
     """
     Parameter:
@@ -469,7 +488,8 @@ def get_partname_of_DrawProjGroupItem(selected_objects, sep = '_'):
                 # Get part name until underscore by safely access Source and Label
                 try:
                     # TechDraw::DrawProjGroupItem was made from selected body
-                    if obj.Source[0].TypeId != "PartDesign::Body":
+                    print(f"name: {obj.Source[0].Name}, type: {obj.Source[0].TypeId}")
+                    if obj.Source[0].TypeId != "PartDesign::Body" and obj.Source[0].TypeId != "Part::Cut":
                         part_name_until_sep = obj.Source[0].InListRecursive[0].Label.split(sep)[0]
                     # TechDraw::DrawProjGroupItem was made from selected body's subf-function (like 'Pocket026')
                     else:
