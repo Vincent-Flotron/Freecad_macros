@@ -18,9 +18,12 @@ librecad_path = "/usr/bin/librecad"  # Adjust this path if necessary
 selection = Gui.Selection.getSelection()
 
 # Ask user for the folder to save the PDFs
+QtGui.QMessageBox.info(None, "Debug", f"File path: /home/wace/Documents/git/Stairs/dxf/")
 folder_dialog = QtGui.QFileDialog()
 folder_dialog.setFileMode(QtGui.QFileDialog.Directory)
 folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly)
+folder_dialog.setDirectory("/home/wace/Documents/git/Stairs/dxf/")  # Set default folder
+
 
 # If user selects a folder, proceed with PDF export
 if folder_dialog.exec_():
