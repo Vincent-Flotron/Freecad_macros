@@ -1,31 +1,29 @@
 import FreeCAD     as     App
 import FreeCADGui  as     Gui
 import TechDraw
-# import TechDrawGui
 import os
 import subprocess
 from PySide import QtGui, QtWidgets
 import sys
+
 mod_to_import = 'MyTools'
 if mod_to_import in sys.modules:
     del sys.modules[mod_to_import]
 import MyTools
-
 
 # Path to the LibreCAD executable
 librecad_path = "/usr/bin/librecad"  # Adjust this path if necessary
 
 selection = Gui.Selection.getSelection()
 
-# Ask user for the folder to save the PDFs
-QtGui.QMessageBox.info(None, "Debug", f"File path: /home/wace/Documents/git/Stairs/dxf/")
+# Create a folder selection dialog
 folder_dialog = QtGui.QFileDialog()
 folder_dialog.setFileMode(QtGui.QFileDialog.Directory)
-folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly)
-folder_dialog.setDirectory("/home/wace/Documents/git/Stairs/dxf/")  # Set default folder
+folder_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
+folder_dialog.setOption(QtGui.QFileDialog.DontUseNativeDialog, True)  # Force Qt Dialog (fix default folder issue)
+folder_dialog.setDirectory("/home/wace/Documents/git/Stairs/dxf")  # Set the default folder
 
-
-# If user selects a folder, proceed with PDF export
+# If user selects a folder, proceed
 if folder_dialog.exec_():
     root = folder_dialog.selectedFiles()[0] + "/"
 
@@ -39,21 +37,18 @@ if folder_dialog.exec_():
             # Check if the file exists and delete it
             if os.path.exists(dxf_file_path):
                 os.remove(dxf_file_path)
+            
             # Write file
             TechDraw.writeDXFPage(page, dxf_file_path)
             if not os.path.exists(dxf_file_path):
-                QtGui.QMessageBox.warning(None, "Error", f"Failed to save the PDF: {dxf_file_path}")
+                QtGui.QMessageBox.warning(None, "Error", f"Failed to save the DXF: {dxf_file_path}")
 
-
-        # Construct the command to open the file with LibreCAD
-        command = [librecad_path, dxf_file_path]
-
-        # Open the final DXF with the default system DXF software
-        try:
-            if os.name == 'nt':  # For Windows
-                os.startfile(dxf_file_path)
-            elif os.name == 'posix':  # For macOS and Linux
-                opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
-                subprocess.call([opener, dxf_file_path])
-        except Exception as e:
-            QtGui.QMessageBox.warning(None, "Error", f"Failed to open the XDF: {str(e)}")
+            # Open the final DXF with the default system DXF software
+            try:
+                if os.name == 'nt':  # For Windows
+                    os.startfile(dxf_file_path)
+                elif os.name == 'posix':  # For macOS and Linux
+                    opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+                    subprocess.call([opener, dxf_file_path])
+            except Exception as e:
+                QtGui.QMessageBox.warning(None, "Error", f"Failed to open the DXF: {str(e)}")
